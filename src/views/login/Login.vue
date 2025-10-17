@@ -75,9 +75,9 @@ const handleLogin = async () => {
       router.push(redirect);
     } 
     else if (authStore.position === "管理员") {
-      router.push("/home");
+      router.push("/");
     } else {
-      router.push("/home");
+      router.push("/");
     }
   } catch (error) {
     console.error("登录失败：", error.message);

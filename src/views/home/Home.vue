@@ -252,7 +252,8 @@ const goToSeniorVote = (activity) => {
       activityId: activity.activityId,
       activityName: activity.activityName,
       maxVoteNum: activity.maxVoteNum,
-      activityStatus: activity.activityStatus
+      activityStatus: activity.activityStatus,
+      isName: activity.isName
     }
   })
 }
@@ -265,7 +266,8 @@ const goToTalentVote = (activity) => {
       activityId: activity.activityId,
       activityName: activity.activityName,
       maxVoteNum: activity.maxVoteNum,
-      activityStatus: activity.activityStatus
+      activityStatus: activity.activityStatus,
+      isName: activity.isName
     }
   })
 }
@@ -278,7 +280,8 @@ const goToGuestProfessorVote = (activity) => {
       activityId: activity.activityId,
       activityName: activity.activityName,
       maxVoteNum: activity.maxVoteNum,
-      activityStatus: activity.activityStatus
+      activityStatus: activity.activityStatus,
+      isName: activity.isName
     }
   })
 }

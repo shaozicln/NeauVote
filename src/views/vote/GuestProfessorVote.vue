@@ -2,13 +2,21 @@
   <div class="container mx-auto p-4 max-w-5xl">
     <!-- 页面标题 -->
     <div class="mb-6">
-      <!-- 返回按钮 -->
-      <div class="mb-4 text-left">
+      <!-- 返回按钮和个人信息 -->
+      <div class="mb-4 flex justify-between items-center">
         <button 
           @click="goBack"
           class="px-4 py-1 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors text-sm flex items-center"
         >
           <i class="mr-1">←</i> 返回列表
+        </button>
+        <!-- 个人信息按钮 - 仅在记名投票时显示 -->
+        <button
+          v-if="activity.isName === 1"
+          @click="userModalVisible = true"
+          class="px-4 py-1 bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors text-sm flex items-center"
+        >
+          <i class="mr-1">👤</i> 个人信息
         </button>
       </div>
       <h1 class="text-2xl font-bold text-blue-800 text-center">{{ activity.activityName }}</h1>
@@ -110,8 +118,7 @@
             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">姓名</th>
             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">职称</th>
             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">当前票数</th>
-            <!-- <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">状态</th> -->
-            <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-blue-700 uppercase tracking-wider">选择</th>
+            <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-blue-700 uppercase tracking-wider">评审意见</th>
           </tr>
         </thead>
         <tbody class="bg-white divide-y divide-gray-200">
@@ -120,20 +127,23 @@
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ teacher.name }}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ teacher.proTitle }}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ teacher.voteNum }}</td>
-            <!-- <td class="px-6 py-4 whitespace-nowrap">
-              <span :class="['px-2 inline-flex text-xs leading-5 font-semibold rounded-full', teacher.status === 0 ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800']">
-                {{ teacher.status === 0 ? '待审核' : '已审核' }}
-              </span>
-            </td> -->
             <td class="px-6 py-4 whitespace-nowrap text-center">
-              <input 
-                type="checkbox" 
-                :id="'teacher-' + teacher.id" 
-                :checked="selectedTeachers.includes(teacher.id)"
-                @change="handleTeacherSelect(teacher.id)"
-                :disabled="!canVote || (selectedTeachers.includes(teacher.id) ? false : selectedCount >= activity.maxVoteNum)"
-                class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              >
+              <div class="flex space-x-2 justify-center">
+                <el-button
+                  :disabled="!canVote"
+                  :type="''"
+                  :class="getVoteGrade(teacher.id) === '1' ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100' : 'bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100'"
+                  size="small"
+                  @click="setVoteGrade(teacher.id, '1')"
+                >同意</el-button>
+                <el-button
+                  :disabled="!canVote"
+                  :type="''"
+                  :class="getVoteGrade(teacher.id) === '0' ? 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100' : 'bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100'"
+                  size="small"
+                  @click="setVoteGrade(teacher.id, '0')"
+                >不同意</el-button>
+              </div>
             </td>
           </tr>
         </tbody>
@@ -166,6 +176,12 @@
       </button>
     </div>
   </div>
+  
+  <!-- 个人信息弹窗 -->
+  <UserModal 
+    v-if="activity.isName === 1"
+    v-model:visible="userModalVisible"
+  />
 </template>
 
 <script setup>
@@ -174,6 +190,10 @@ import { useRoute, useRouter } from 'vue-router'
 import { getPageEmp2 } from '@/api/tbEmp2'
 import { addVoteLogEmp2 } from '@/api/voteLogEmp2'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { useAuthStore } from '@/store/authStore'
+import UserModal from '@/components/user.vue'
+
+const authStore = useAuthStore();
 
 const route = useRoute()
 const router = useRouter()
@@ -183,8 +203,12 @@ const activityId = route.query.activityId
 const activity = ref({
   activityName: '',
   maxVoteNum: 0,
-  activityStatus: 1
+  activityStatus: 1,
+  isName: 0 // 0: 不记名, 1: 记名
 })
+
+// 个人信息弹窗
+const userModalVisible = ref(false);
 
 // 分页数据
 const teachers = ref([])
@@ -204,18 +228,33 @@ const toggleRules = () => {
 // 查询条件
 const empName = ref('')
 
-// 投票数据
-const selectedTeachers = ref([])
+// 投票数据 - 存储每位教师的投票结果 {teacherId: voteGrade}
+const voteGrades = ref({})
 
 // 计算属性：是否可以投票
 const canVote = computed(() => {
   return activity.value.activityStatus === 1
 })
 
-// 计算属性：已选择的教师数量
+// 计算属性：已选择的教师数量（已选择了"同意"的教师数量）
 const selectedCount = computed(() => {
-  return selectedTeachers.value.length
+  return Object.values(voteGrades.value).filter(vote => vote === '1').length
 })
+
+// 获取某位教师的投票结果
+const getVoteGrade = (teacherId) => {
+  return voteGrades.value[teacherId] || ''
+}
+
+// 设置某位教师的投票结果
+const setVoteGrade = (teacherId, grade) => {
+  // 如果选择"同意"，检查是否超过最大可选数量
+  if (grade === '1' && selectedCount.value >= activity.value.maxVoteNum && getVoteGrade(teacherId) !== '1') {
+    ElMessage.warning(`最多只能选择${activity.value.maxVoteNum}人同意`)
+    return
+  }
+  voteGrades.value[teacherId] = grade
+}
 
 // 加载教师列表
 const loadTeachers = async () => {
@@ -252,13 +291,7 @@ const handleSearch = () => {
   loadTeachers()
 }
 
-// 处理重置
-const handleReset = () => {
-  empName.value = ''
-  selectedTeachers.value = []
-  currentPage.value = 1
-  loadTeachers()
-}
+
 
 // 处理页码变化
 const handleCurrentPageChange = (val) => {
@@ -273,39 +306,28 @@ const handlePageSizeChange = (val) => {
   loadTeachers()
 }
 
-// 处理教师选择
-const handleTeacherSelect = (teacherId) => {
-  const index = selectedTeachers.value.indexOf(teacherId)
-  if (index > -1) {
-    // 取消选择
-    selectedTeachers.value.splice(index, 1)
-  } else {
-    // 检查是否超过最大可选数量
-    if (selectedTeachers.value.length >= activity.value.maxVoteNum) {
-      ElMessage.warning(`最多只能选择${activity.value.maxVoteNum}人`)
-      return
-    }
-    // 添加选择
-    selectedTeachers.value.push(teacherId)
-  }
+// 处理重置
+const handleReset = () => {
+  empName.value = ''
+  voteGrades.value = {}
+  currentPage.value = 1
+  loadTeachers()
 }
 
 // 提交投票
 const submitVote = async () => {
-  if (selectedCount.value === 0) {
-    ElMessage.warning('请至少选择一位教师')
+  // 检查是否有已投票项
+  const hasVoted = Object.keys(voteGrades.value).length > 0
+  
+  if (!hasVoted) {
+    ElMessage.warning('请至少对一位教师进行投票')
     return
   }
   
-  if (selectedCount.value > activity.value.maxVoteNum) {
-    ElMessage.warning(`最多只能选择${activity.value.maxVoteNum}人`)
-    return
-  }
-
   try {
     // 确认对话框
     await ElMessageBox.confirm(
-      `确定要投票给这${selectedCount.value}位教师吗？`,
+      `确定要提交您的投票结果吗？已选择${selectedCount.value}人同意`,
       '确认投票',
       {
         confirmButtonText: '确认',
@@ -315,12 +337,12 @@ const submitVote = async () => {
     )
 
     // 准备投票数据 - 转换为要求的数据结构
-    const voteDataArray = selectedTeachers.value.map(empId => {
+    const voteDataArray = Object.entries(voteGrades.value).map(([empId, voteGrade]) => {
       return {
         userId: parseInt(localStorage.getItem('userId') || ''),
         activityId: parseInt(activityId),
         empId: parseInt(empId),
-        voteGrade: 1 // 1表示同意
+        voteGrade: parseInt(voteGrade)
       }
     })
 
@@ -346,7 +368,7 @@ const goBack = () => {
     type: 'guest',
     activityId: activityId
   }))
-  router.push('/home')
+  router.push('/')
 }
 
 defineExpose({
@@ -359,10 +381,13 @@ onMounted(() => {
   activity.value = {
     activityName: route.query.activityName || '客座教授引进意见投票',
     maxVoteNum: parseInt(route.query.maxVoteNum) || 5,
-    activityStatus: parseInt(route.query.activityStatus) || 1
+    activityStatus: parseInt(route.query.activityStatus) || 1,
+    isName: parseInt(route.query.isName) || 0
   }
   
   // 加载教师列表
   loadTeachers()
+  
+  
 })
 </script>

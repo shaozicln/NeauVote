@@ -2,13 +2,21 @@
   <div class="container mx-auto p-4">
     <!-- 页面标题 -->
     <div class="mb-6">
-      <!-- 返回按钮 -->
-      <div class="mb-4 text-left">
+      <!-- 返回按钮和个人信息 -->
+      <div class="mb-4 flex justify-between items-center">
         <button
           @click="goBack"
           class="px-4 py-1 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors text-sm flex items-center"
         >
           <i class="mr-1">←</i> 返回列表
+        </button>
+        <!-- 个人信息按钮 - 仅在记名投票时显示 -->
+        <button
+          v-if="activity.isName === 1"
+          @click="userModalVisible = true"
+          class="px-4 py-1 bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors text-sm flex items-center"
+        >
+          <i class="mr-1">👤</i> 个人信息
         </button>
       </div>
       <h1 class="text-2xl font-bold text-blue-800 text-center">
@@ -216,17 +224,22 @@
             <td
               class="border border-blue-200 px-4 py-2 text-sm text-gray-700 text-center"
             >
-              <select
-                v-model="
-                  createVoteGradeGetterSetter(teacher.id, 'voteGrade1').value
-                "
-                :disabled="!canVote"
-                class="w-full border rounded px-2 py-1 text-sm"
-              >
-                <option value="">请选择</option>
-                <option value="1">同意</option>
-                <option value="0">不同意</option>
-              </select>
+              <div class="flex space-x-2 justify-center">
+                <el-button
+                  :disabled="!canVote"
+                  :type="''"
+                  :class="createVoteGradeGetterSetter(teacher.id, 'voteGrade1').value === '1' ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100' : 'bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100'"
+                  size="small"
+                  @click="createVoteGradeGetterSetter(teacher.id, 'voteGrade1').value = '1'"
+                >同意</el-button>
+                <el-button
+                  :disabled="!canVote"
+                  :type="''"
+                  :class="createVoteGradeGetterSetter(teacher.id, 'voteGrade1').value === '0' ? 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100' : 'bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100'"
+                  size="small"
+                  @click="createVoteGradeGetterSetter(teacher.id, 'voteGrade1').value = '0'"
+                >不同意</el-button>
+              </div>
             </td>
             <td class="border border-blue-200 px-4 py-2 text-sm text-gray-700">
               {{ teacher.proTitle }}
@@ -234,17 +247,22 @@
             <td
               class="border border-blue-200 px-4 py-2 text-sm text-gray-700 text-center"
             >
-              <select
-                v-model="
-                  createVoteGradeGetterSetter(teacher.id, 'voteGrade2').value
-                "
-                :disabled="!canVote"
-                class="w-full border rounded px-2 py-1 text-sm"
-              >
-                <option value="">请选择</option>
-                <option value="1">同意</option>
-                <option value="0">不同意</option>
-              </select>
+              <div class="flex space-x-2 justify-center">
+                <el-button
+                  :disabled="!canVote"
+                  :type="''"
+                  :class="createVoteGradeGetterSetter(teacher.id, 'voteGrade2').value === '1' ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100' : 'bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100'"
+                  size="small"
+                  @click="createVoteGradeGetterSetter(teacher.id, 'voteGrade2').value = '1'"
+                >同意</el-button>
+                <el-button
+                  :disabled="!canVote"
+                  :type="''"
+                  :class="createVoteGradeGetterSetter(teacher.id, 'voteGrade2').value === '0' ? 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100' : 'bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100'"
+                  size="small"
+                  @click="createVoteGradeGetterSetter(teacher.id, 'voteGrade2').value = '0'"
+                >不同意</el-button>
+              </div>
             </td>
             <td class="border border-blue-200 px-4 py-2 text-sm text-gray-700">
               {{ teacher.tutorQualify }}
@@ -252,17 +270,22 @@
             <td
               class="border border-blue-200 px-4 py-2 text-sm text-gray-700 text-center"
             >
-              <select
-                v-model="
-                  createVoteGradeGetterSetter(teacher.id, 'voteGrade3').value
-                "
-                :disabled="!canVote"
-                class="w-full border rounded px-2 py-1 text-sm"
-              >
-                <option value="">请选择</option>
-                <option value="1">同意</option>
-                <option value="0">不同意</option>
-              </select>
+              <div class="flex space-x-2 justify-center">
+                <el-button
+                  :disabled="!canVote"
+                  :type="''"
+                  :class="createVoteGradeGetterSetter(teacher.id, 'voteGrade3').value === '1' ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100' : 'bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100'"
+                  size="small"
+                  @click="createVoteGradeGetterSetter(teacher.id, 'voteGrade3').value = '1'"
+                >同意</el-button>
+                <el-button
+                  :disabled="!canVote"
+                  :type="''"
+                  :class="createVoteGradeGetterSetter(teacher.id, 'voteGrade3').value === '0' ? 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100' : 'bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100'"
+                  size="small"
+                  @click="createVoteGradeGetterSetter(teacher.id, 'voteGrade3').value = '0'"
+                >不同意</el-button>
+              </div>
             </td>
           </tr>
         </tbody>
@@ -290,19 +313,28 @@
           !canVote || selectedCount === 0 || selectedCount > activity.maxVoteNum
         "
         class="px-8 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:bg-gray-300 font-medium"
-      >
-        提交投票
-      </button>
+      >提交投票
+        </button>
+      </div>
     </div>
-  </div>
+  
+  <!-- 个人信息弹窗 -->
+  <UserModal
+    v-if="activity.isName === 1"
+    v-model:visible="userModalVisible"
+  />
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, computed, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { getTbEmp1Page } from "@/api/tbEmp1";
 import { addVoteLogEmp1 } from "@/api/voteLogEmp1";
 import { ElMessage, ElMessageBox } from "element-plus";
+import { useAuthStore } from '@/store/authStore';
+import UserModal from '@/components/user.vue';
+
+const authStore = useAuthStore();
 
 const route = useRoute();
 const router = useRouter();
@@ -313,7 +345,11 @@ const activity = ref({
   activityName: "",
   maxVoteNum: 0,
   activityStatus: 1,
+  isName: 0 // 0: 不记名, 1: 记名
 });
+
+// 个人信息弹窗
+const userModalVisible = ref(false);
 
 // 投票规则可见性
 const rulesVisible = ref(true);
@@ -521,7 +557,7 @@ const goBack = () => {
       activityId: activityId,
     })
   );
-  router.push("/home");
+  router.push("/");
 };
 
 defineExpose({
@@ -535,9 +571,12 @@ onMounted(() => {
     activityName: route.query.activityName || "2024年优秀人才评审投票",
     maxVoteNum: parseInt(route.query.maxVoteNum) || 10,
     activityStatus: parseInt(route.query.activityStatus) || 1,
+    isName: parseInt(route.query.isName) || 0
   };
 
   // 加载教师列表
   loadTeachers();
+  
+  
 });
 </script>

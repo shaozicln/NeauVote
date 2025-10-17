@@ -41,6 +41,16 @@ const username = ref('')
 onMounted(() => {
   checkLoginStatus()
   
+  // 如果没有登录信息且不在登录页，则显示提示并跳转到登录页
+  if (!isLoggedIn.value && route.path !== '/login' && route.path !== '/404') {
+    console.log('未检测到用户信息，显示提示并跳转到登录页面')
+    ElMessage.info('尚无用户信息，请登录')
+    // 延迟一小段时间后跳转，让用户有时间看到提示信息
+    setTimeout(() => {
+      router.push('/login')
+    }, 1000)
+  }
+  
   // 监听登录成功事件，更新状态
   eventBus.on('loginSuccess', () => {
     console.log('接收到登录成功事件，更新登录状态')
@@ -113,7 +123,7 @@ function logout() {
 function toggleAdminFrontend() {
   if (route.path === '/adminIndex') {
     // 如果当前在管理页面，则跳转到前台首页
-    router.push('/home')
+    router.push('/')
   } else {
     // 否则跳转到管理页面
     router.push('/adminIndex')
@@ -131,7 +141,14 @@ const adminButtonText = computed(() => {
     <!-- 导航栏 -->
     <nav class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
       <div class="container mx-auto px-4 py-3 flex justify-between items-center">
-        <div class="font-bold text-xl text-gray-800">投票系统Vote@NEAU</div>
+        <!-- 根据路由显示不同的标题 -->
+        <template v-if="route.path === '/adminIndex'">
+          <h2 class="font-bold text-xl text-blue-600">后台管理Vote@NEAU</h2>
+          <span class="text-gray-700">欢迎，{{ username }}</span>
+        </template>
+        <template v-else>
+          <div class="font-bold text-xl text-gray-800">投票系统Vote@NEAU</div>
+        </template>
         
         <!-- 右侧按钮区域 -->
         <div class="flex items-center space-x-4">

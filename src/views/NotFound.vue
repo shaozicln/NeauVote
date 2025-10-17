@@ -17,7 +17,7 @@
     </div>
     <!-- 返回首页链接 -->
     <router-link 
-      to="/home" 
+      to="/" 
       class="text-blue-500 text-base border border-blue-500 px-5 py-2.5 rounded transition-all duration-300 hover:bg-blue-500 hover:text-white no-underline"
     >
       返回首页 »

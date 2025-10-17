@@ -19,7 +19,7 @@ const getAuthStore = async () => {
 const routes = [
   // { path: "/", name: "index", component: Index, meta: { requestAuth: false } },
   {
-    path: "/home",
+    path: "/",
     name: "home",
     component: Home,
     meta: { requestAuth: false },
