@@ -6,7 +6,8 @@ export const useAuthStore = defineStore('auth', {
     // 从localStorage初始化，保持刷新后状态
     token: localStorage.getItem('token') || '',
     username: localStorage.getItem('username') || '',
-    position: localStorage.getItem('position') || ''
+    position: localStorage.getItem('position') || '',
+    userId: localStorage.getItem('userId') || ''
   }),
   actions: {
     // 设置认证信息（登录成功后调用）
@@ -14,19 +15,23 @@ export const useAuthStore = defineStore('auth', {
       this.token = authData.token
       this.username = authData.username
       this.position = authData.position
+      this.userId = authData.id || '' // 从返回数据中获取id字段
       // 同步到localStorage
       localStorage.setItem('token', authData.token)
       localStorage.setItem('username', authData.username)
       localStorage.setItem('position', authData.position)
+      localStorage.setItem('userId', authData.id || '')
     },
      // 清除认证信息时添加路由跳转（退出登录或token失效时调用）
     clearAuthInfo() {
       this.token = ''
       this.username = ''
       this.position = ''
+      this.userId = ''
       localStorage.removeItem('token')
       localStorage.removeItem('username')
       localStorage.removeItem('position')
+      localStorage.removeItem('userId')
       
       // 主动跳转到登录页
       if (router.currentRoute.value.path !== '/login') {

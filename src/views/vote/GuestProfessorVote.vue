@@ -316,11 +316,9 @@ const handleReset = () => {
 
 // 提交投票
 const submitVote = async () => {
-  // 检查是否有已投票项
-  const hasVoted = Object.keys(voteGrades.value).length > 0
-  
-  if (!hasVoted) {
-    ElMessage.warning('请至少对一位教师进行投票')
+  // 检查是否填写了全部教师的投票内容
+  if (Object.keys(voteGrades.value).length !== total.value) {
+    ElMessage.warning('请填写全部投票内容')
     return
   }
   
@@ -345,7 +343,7 @@ const submitVote = async () => {
         voteGrade: parseInt(voteGrade)
       }
     })
-
+  
     await addVoteLogEmp2(voteDataArray)
     ElMessage.success('投票成功')
     

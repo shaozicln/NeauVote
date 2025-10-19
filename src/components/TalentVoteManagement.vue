@@ -43,7 +43,7 @@
       <!-- 投票列表 -->
       <el-table :data="filteredVotes" style="width: 100%" v-loading="loading" fit>
         <el-table-column prop="activityId" label="投票ID" />
-        <el-table-column prop="activityName" label="投票标题" />
+        <el-table-column prop="activityName" label="投票标题" min-width="250" />
         <el-table-column label="状态">
           <template #default="scope">
             <el-tag
@@ -248,13 +248,13 @@ const filteredVotes = computed(() => {
 
 // 处理添加投票
 const handleAddVote = () => {
-  // 清空表单数据
+  // 设置默认值：状态默认是进行中，是否记名默认是不记名
   Object.assign(editVoteFormData, {
     activityId: '',
     activityName: '',
-    maxVoteNum: 10,
-    activityStatus: 0,
-    isName: 1
+    maxVoteNum: '',
+    activityStatus: true, // true: 进行中 (switch组件使用布尔值)
+    isName: false // false: 不记名 (switch组件使用布尔值)
   })
   
   editDialogVisible.value = true

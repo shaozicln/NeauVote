@@ -41,9 +41,14 @@
       </div>
 
       <!-- 投票列表 -->
-      <el-table :data="filteredVotes" style="width: 100%" v-loading="loading" fit>
+      <el-table
+        :data="filteredVotes"
+        style="width: 100%"
+        v-loading="loading"
+        fit
+      >
         <el-table-column prop="activityId" label="投票ID" />
-        <el-table-column prop="activityName" label="投票标题" />
+        <el-table-column prop="activityName" label="投票标题" min-width="250" />
         <el-table-column label="状态">
           <template #default="scope">
             <el-tag
@@ -66,43 +71,43 @@
         <el-table-column label="操作" min-width="250">
           <template #default="scope">
             <div class="flex space-x-1">
-            <el-button
-              type="primary"
-              size="small"
-              @click="handleViewDetails(scope.row)"
-              plain
-            >
-              详情
-            </el-button>
-            <el-button
-              type="warning"
-              size="small"
-              @click="handleEditVote(scope.row)"
-              class="mr-1"
-              plain
-            >
-              编辑
-            </el-button>
-            <el-button
-              type="success"
-              size="small"
-              @click="handleToggleStatus(scope.row)"
-              class="mr-1"
-              plain
-            >
-              {{ scope.row.activityStatus === 1 ? "暂停" : "激活" }}
-            </el-button>
-            <el-button
-              type="danger"
-              size="small"
-              @click="handleDeleteVote(scope.row.activityId)"
-              plain
-            >
+              <el-button
+                type="primary"
+                size="small"
+                @click="handleViewDetails(scope.row)"
+                plain
+              >
+                详情
+              </el-button>
+              <el-button
+                type="warning"
+                size="small"
+                @click="handleEditVote(scope.row)"
+                class="mr-1"
+                plain
+              >
+                编辑
+              </el-button>
+              <el-button
+                type="success"
+                size="small"
+                @click="handleToggleStatus(scope.row)"
+                class="mr-1"
+                plain
+              >
+                {{ scope.row.activityStatus === 1 ? "暂停" : "激活" }}
+              </el-button>
+              <el-button
+                type="danger"
+                size="small"
+                @click="handleDeleteVote(scope.row.activityId)"
+                plain
+              >
                 删除
               </el-button>
             </div>
-            </template>
-          </el-table-column>
+          </template>
+        </el-table-column>
       </el-table>
 
       <!-- 分页 -->
@@ -119,11 +124,20 @@
 
     <!-- 编辑投票弹窗 -->
     <el-dialog v-model="editDialogVisible" title="编辑高级投票" width="700px">
-      <el-form ref="editVoteForm" :model="editVoteFormData" :rules="rules" label-width="120px">
+      <el-form
+        ref="editVoteForm"
+        :model="editVoteFormData"
+        :rules="rules"
+        label-width="120px"
+      >
         <el-form-item label="投票ID" prop="activityId">
-          <el-input v-model="editVoteFormData.activityId" disabled placeholder="投票ID" />
+          <el-input
+            v-model="editVoteFormData.activityId"
+            disabled
+            placeholder="投票ID"
+          />
         </el-form-item>
-        
+
         <el-form-item label="投票标题" prop="activityName">
           <el-input
             v-model="editVoteFormData.activityName"
@@ -218,45 +232,68 @@ const editVoteFormData = reactive({
 // 表单验证规则
 const rules = {
   activityName: [
-    { required: true, message: '请输入投票标题', trigger: 'blur' },
-    { min: 1, max: 50, message: '长度在 1 到 50 个字符', trigger: 'blur' }
+    { required: true, message: "请输入投票标题", trigger: "blur" },
+    { min: 1, max: 50, message: "长度在 1 到 50 个字符", trigger: "blur" },
   ],
   maxVoteNum: [
-    { required: true, message: '请输入最大投票数', trigger: 'blur' },
-    { type: 'number', min: 1, message: '最大投票数必须大于0', trigger: 'blur' }
+    { required: true, message: "请输入最大投票数", trigger: "blur" },
+    { type: "number", min: 1, message: "最大投票数必须大于0", trigger: "blur" },
   ],
   amaxVoteNum: [
-    { required: true, message: '请输入最大A票数', trigger: 'blur' },
-    { type: 'number', min: 0, message: '最大A票数必须大于等于0', trigger: 'blur' }
-  ]
+    { required: true, message: "请输入最大A票数", trigger: "blur" },
+    {
+      type: "number",
+      min: 0,
+      message: "最大A票数必须大于等于0",
+      trigger: "blur",
+    },
+  ],
 };
 
 // 监听状态筛选变化
 watch(statusFilter, (newVal) => {
-  console.log('状态筛选变化:', newVal, '类型:', typeof newVal)
-})
+  console.log("状态筛选变化:", newVal, "类型:", typeof newVal);
+});
 
 // 过滤后的投票列表
 const filteredVotes = computed(() => {
-  console.log('执行筛选 - statusFilter:', statusFilter.value, '类型:', typeof statusFilter.value)
-  
-  let result = votes.value
+  console.log(
+    "执行筛选 - statusFilter:",
+    statusFilter.value,
+    "类型:",
+    typeof statusFilter.value
+  );
+
+  let result = votes.value;
   // 先应用搜索过滤
   if (searchQuery.value) {
-    result = result.filter(vote => vote.activityName && vote.activityName.includes(searchQuery.value))
+    result = result.filter(
+      (vote) =>
+        vote.activityName && vote.activityName.includes(searchQuery.value)
+    );
   }
-  
+
   // 再应用状态过滤
-  if (statusFilter.value !== '' && statusFilter.value !== null && statusFilter.value !== undefined) {
-    console.log('应用状态筛选，值:', statusFilter.value)
+  if (
+    statusFilter.value !== "" &&
+    statusFilter.value !== null &&
+    statusFilter.value !== undefined
+  ) {
+    console.log("应用状态筛选，值:", statusFilter.value);
     // 直接使用原始值比较
-    result = result.filter(vote => {
-      console.log(`比较: vote.activityStatus=${vote.activityStatus} (${typeof vote.activityStatus}) 和 statusFilter.value=${statusFilter.value} (${typeof statusFilter.value})`)
-      return vote.activityStatus === statusFilter.value
-    })
+    result = result.filter((vote) => {
+      console.log(
+        `比较: vote.activityStatus=${
+          vote.activityStatus
+        } (${typeof vote.activityStatus}) 和 statusFilter.value=${
+          statusFilter.value
+        } (${typeof statusFilter.value})`
+      );
+      return vote.activityStatus === statusFilter.value;
+    });
   }
-  
-  console.log('筛选结果数量:', result.length)
+
+  console.log("筛选结果数量:", result.length);
   return result;
 });
 
@@ -312,14 +349,14 @@ const getStatusType = (status) => {
 
 // 处理添加投票
 const handleAddVote = () => {
-  // 清空表单数据
+  // 设置默认值：状态默认是进行中，是否记名默认是不记名
   Object.assign(editVoteFormData, {
     activityId: "",
     activityName: "",
-    maxVoteNum: 10,
-    amaxVoteNum: 5,
-    activityStatus: 0,
-    isName: 1,
+    maxVoteNum: "",
+    amaxVoteNum: "",
+    activityStatus: true, // true: 进行中 (switch组件使用布尔值)
+    isName: false, // false: 不记名 (switch组件使用布尔值)
   });
 
   editDialogVisible.value = true;
@@ -332,8 +369,8 @@ const handleEditVote = (vote) => {
     activityName: vote.activityName || vote.title,
     maxVoteNum: vote.maxVoteNum || 10,
     amaxVoteNum: vote.amaxVoteNum || 5,
-    activityStatus: Boolean(vote.activityStatus), 
-    isName: Boolean(vote.isName), 
+    activityStatus: Boolean(vote.activityStatus),
+    isName: Boolean(vote.isName),
   });
 
   editDialogVisible.value = true;
@@ -343,10 +380,10 @@ const handleEditVote = (vote) => {
 const handleSaveVote = async () => {
   // 验证表单
   if (!editVoteForm.value) return;
-  
+
   try {
     await editVoteForm.value.validate();
-    
+
     loading.value = true;
     const voteData = {
       ...editVoteFormData,
@@ -372,7 +409,8 @@ const handleSaveVote = async () => {
     await loadVotes();
     editDialogVisible.value = false;
   } catch (error) {
-    if (error !== false) { // 不是表单验证错误
+    if (error !== false) {
+      // 不是表单验证错误
       ElMessage.error(
         editVoteFormData.activityId ? "编辑投票失败" : "添加投票失败"
       );
@@ -391,9 +429,12 @@ const handleCancelEdit = () => {
 // 处理查看详情
 const handleViewDetails = (vote) => {
   // 跳转到信息统计页面
-  window.sessionStorage.setItem('currentVoteActivityId', vote.activityId || vote.id);
+  window.sessionStorage.setItem(
+    "currentVoteActivityId",
+    vote.activityId || vote.id
+  );
   // 触发父组件的菜单切换事件，跳转到SeniorMsg页面
-  const event = new CustomEvent('menu-select', { detail: '2-2' });
+  const event = new CustomEvent("menu-select", { detail: "2-2" });
   window.dispatchEvent(event);
 };
 
@@ -416,9 +457,7 @@ const handleToggleStatus = async (vote) => {
           ...vote,
           activityStatus: newStatus,
         });
-        ElMessage.success(
-          `投票${newStatus === 1 ? "激活" : "暂停"}成功`
-        );
+        ElMessage.success(`投票${newStatus === 1 ? "激活" : "暂停"}成功`);
         // 重新加载数据
         await loadVotes();
       } catch (error) {
@@ -435,9 +474,13 @@ const handleToggleStatus = async (vote) => {
 
 // 处理删除投票
 const handleDeleteVote = async (id) => {
-  const voteToDelete = votes.value.find((v) => v.id === id || v.activityId === id);
+  const voteToDelete = votes.value.find(
+    (v) => v.id === id || v.activityId === id
+  );
   ElMessageBox.confirm(
-    `确定要删除投票「${voteToDelete?.activityName || voteToDelete?.title || id}」吗？删除后无法恢复。`,
+    `确定要删除投票「${
+      voteToDelete?.activityName || voteToDelete?.title || id
+    }」吗？删除后无法恢复。`,
     "确认删除",
     {
       confirmButtonText: "确定",

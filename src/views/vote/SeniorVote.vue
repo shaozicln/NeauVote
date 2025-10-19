@@ -409,8 +409,9 @@ const handleVoteSelection = (teacherId, voteType) => {
 
 // 提交投票
 const submitVote = async () => {
-  if (selectedACount.value + selectedBCount.value === 0) {
-    ElMessage.warning("请至少选择一位教师");
+  // 检查是否填写了全部教师的投票内容
+  if (Object.keys(voteSelections.value).length !== total.value) {
+    ElMessage.warning("请填写全部投票内容");
     return;
   }
 
@@ -434,10 +435,11 @@ const submitVote = async () => {
     // 准备投票数据 - 转换为要求的数据结构
     const voteDataArray = Object.keys(voteSelections.value).map((empId) => {
       return {
-        activeId: activityId,
-        voteId: localStorage.getItem("userId") || "",
+        activityId: parseInt(activityId),
+        userId: parseInt(localStorage.getItem("userId") || ""),
         empId: parseInt(empId),
         voteGrade: voteSelections.value[empId],
+        voteRound: 1 // 默认第一轮投票
       };
     });
 

@@ -475,7 +475,7 @@ const handlePageSizeChange = (val) => {
 
 // 提交投票
 const submitVote = async () => {
-  // 检查是否有完成投票的教师
+  // 检查是否填写了全部教师的投票内容
   const completedVotes = Object.keys(voteGrades.value).filter((teacherId) => {
     const grades = voteGrades.value[teacherId];
     return (
@@ -489,8 +489,8 @@ const submitVote = async () => {
     );
   });
 
-  if (completedVotes.length === 0) {
-    ElMessage.warning("请至少完成一名教师的全部评审意见");
+  if (completedVotes.length !== total.value) {
+    ElMessage.warning("请填写全部投票内容");
     return;
   }
 
@@ -520,13 +520,13 @@ const submitVote = async () => {
           grades.voteGrade3 !== ""
         ) {
           return {
-            userId: localStorage.getItem("userId") || "",
-            activityId: activityId,
-            empId: parseInt(teacherId),
-            voteGrade1: parseInt(grades.voteGrade1),
-            voteGrade2: parseInt(grades.voteGrade2),
-            voteGrade3: parseInt(grades.voteGrade3),
-          };
+          userId: parseInt(localStorage.getItem("userId") || ""),
+          activityId: parseInt(activityId),
+          empId: parseInt(teacherId),
+          voteGrade1: parseInt(grades.voteGrade1),
+          voteGrade2: parseInt(grades.voteGrade2),
+          voteGrade3: parseInt(grades.voteGrade3),
+        };
         }
         return null;
       })

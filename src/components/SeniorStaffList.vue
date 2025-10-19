@@ -34,11 +34,11 @@
           placeholder="选择学院"
           style="width: 150px; margin-right: 10px"
         >
-          <el-option 
-            v-for="option in collegeOptions" 
-            :key="option.value" 
-            :label="option.label" 
-            :value="option.value" 
+          <el-option
+            v-for="option in collegeOptions"
+            :key="option.value"
+            :label="option.label"
+            :value="option.value"
           />
         </el-select>
 
@@ -55,73 +55,72 @@
       </div>
 
       <!-- 候选人列表 -->
-      <el-table :data="filteredStaffs" style="width: 100%" v-loading="loading" fit>
+      <el-table
+        :data="filteredStaffs"
+        style="width: 100%"
+        v-loading="loading"
+        fit
+      >
         <el-table-column prop="empId" label="候选人ID" />
         <el-table-column prop="empName" label="候选人姓名" />
-        <el-table-column prop="empPrePosition" label="拟晋职称" />
-        <el-table-column prop="empCollege" label="所在单位" />
-        <el-table-column label="状态">
-          <template #default="scope">
-            <el-tag
-              :type="getStatusType(scope.row.status)"
-            >
+        <el-table-column prop="empPrePosition" label="拟晋职称" min-width="100" />
+        <el-table-column prop="empCollege" label="所在单位" min-width="150" />
+        <el-table-column label="状态" min-width="100">
+          <template #default="scope" >
+            <el-tag :type="getStatusType(scope.row.status)">
               {{ getStatusText(scope.row.status) }}
             </el-tag>
           </template>
         </el-table-column>
-         <el-table-column label="删除状态">
+        <!-- <el-table-column label="删除状态">
           <template #default="scope">
-            <el-tag
-              :type="scope.row.isDelete === 1 ? 'danger' : 'success'"
-            >
-              {{ scope.row.isDelete === 1 ? "删除" : "正常" }}
-            </el-tag>
+            {{ scope.row.isDelete === 1 ? "删除" : "正常" }}
           </template>
-        </el-table-column>
+        </el-table-column> -->
         <el-table-column prop="voteNum" label="同意票数" />
         <el-table-column prop="avoteNum" label="A票数" />
         <el-table-column prop="score" label="总分数" />
         <el-table-column label="操作" min-width="250">
           <template #default="scope">
             <div class="flex space-x-1">
-            <el-button
-              type="primary"
-              size="small"
-              @click="handleViewDetails(scope.row)"
-              class="mr-1"
-              plain
-            >
-              详情
-            </el-button>
-            <el-button
-              type="warning"
-              size="small"
-              @click="handleEditStaff(scope.row)"
-              class="mr-1"
-              plain
-            >
-              编辑
-            </el-button>
-            <el-button
-              type="success"
-              size="small"
-              @click="handleToggleStatus(scope.row)"
-              class="mr-1"
-              plain
-            >
-              切换状态
-            </el-button>
-            <el-button
-              type="danger"
-              size="small"
-              @click="handleDeleteStaff(scope.row.empId)"
-              plain
-            >
+              <el-button
+                type="primary"
+                size="small"
+                @click="handleViewDetails(scope.row)"
+                class="mr-1"
+                plain
+              >
+                详情
+              </el-button>
+              <el-button
+                type="warning"
+                size="small"
+                @click="handleEditStaff(scope.row)"
+                class="mr-1"
+                plain
+              >
+                编辑
+              </el-button>
+              <el-button
+                type="success"
+                size="small"
+                @click="handleToggleStatus(scope.row)"
+                class="mr-1"
+                plain
+              >
+                切换状态
+              </el-button>
+              <el-button
+                type="danger"
+                size="small"
+                @click="handleDeleteStaff(scope.row.empId)"
+                plain
+              >
                 删除
               </el-button>
             </div>
-            </template>
-          </el-table-column>
+          </template>
+        </el-table-column>
       </el-table>
 
       <!-- 分页 -->
@@ -142,7 +141,7 @@
     <!-- 编辑候选人弹窗 -->
     <el-dialog
       v-model="editDialogVisible"
-      title="编辑候选人信息"
+      :title="isEditMode ? '编辑候选人信息' : '添加候选人信息'"
       width="500px"
       :before-close="handleDialogClose"
     >
@@ -153,21 +152,31 @@
         class="mt-2"
       >
         <el-form-item label="候选人ID" disabled>
-          <el-input v-model="editForm.empId" placeholder="自动生成" />
+          <el-input v-model="editForm.empId" disabled placeholder="候选人ID" />
         </el-form-item>
-        
+
         <el-form-item label="候选人姓名">
           <el-input v-model="editForm.empName" placeholder="请输入姓名" />
         </el-form-item>
-        
+
         <el-form-item label="拟晋职称">
-          <el-input v-model="editForm.empPrePosition" placeholder="请输入职称" />
+          <el-input
+            v-model="editForm.empPrePosition"
+            placeholder="请输入职称"
+          />
         </el-form-item>
-        
+
         <el-form-item label="所在单位">
-          <el-input v-model="editForm.empCollege" placeholder="请输入单位" />
+          <el-select v-model="editForm.empCollege" placeholder="请选择单位">
+            <el-option
+              v-for="option in collegeOptions.filter(opt => opt.value !== '')"
+              :key="option.value"
+              :label="option.label"
+              :value="option.value"
+            />
+          </el-select>
         </el-form-item>
-        
+
         <el-form-item label="状态">
           <el-select v-model="editForm.status" placeholder="请选择状态">
             <el-option label="待参投" :value="0" />
@@ -175,15 +184,15 @@
             <el-option label="拟推荐人" :value="2" />
           </el-select>
         </el-form-item>
-        
-        <el-form-item label="删除状态">
+
+        <!-- <el-form-item label="删除状态">
           <el-select v-model="editForm.isDelete" placeholder="请选择状态">
             <el-option label="正常" :value="0" />
             <el-option label="删除" :value="1" />
           </el-select>
-        </el-form-item>
+        </el-form-item> -->
       </el-form>
-      
+
       <template #footer>
         <span class="dialog-footer">
           <el-button @click="handleDialogClose">取消</el-button>
@@ -209,7 +218,7 @@
 import { ref, reactive, computed, onMounted, watch } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { Search, Refresh, Plus } from "@element-plus/icons-vue";
-import { getEmpPage, addEmp, updateEmp, deleteEmp } from "../api/emp";
+import { getEmpPage, updateEmp, addEmp, deleteEmp } from "../api/emp";
 
 // 响应式数据
 const searchQuery = ref("");
@@ -224,80 +233,89 @@ const pageSize = ref(10);
 // 编辑弹窗相关
 const editDialogVisible = ref(false);
 const editFormRef = ref();
+const isEditMode = ref(false);
 const editForm = reactive({
-  empId: '',
-  empName: '',
-  empPrePosition: '',
-  empCollege: '',
+  empId: "",
+  empName: "",
+  empPrePosition: "",
+  empCollege: "",
   status: 0,
   isDelete: 0,
   voteNum: 0,
   avoteNum: 0,
-  score: 0
+  score: 0,
 });
 
 // 学院选项列表
-// const collegeOptions = ref([
-//   { label: '全部学院', value: '' },
-//   { label: '计算机学院', value: '计算机学院' },
-//   { label: '电子工程学院', value: '电子工程学院' },
-//   { label: '自动化学院', value: '自动化学院' },
-//   { label: '数学学院', value: '数学学院' },
-//   { label: '物理学院', value: '物理学院' },
-//   { label: '化学学院', value: '化学学院' },
-//   { label: '生物学院', value: '生物学院' },
-//   { label: '文学院', value: '文学院' },
-//   { label: '商学院', value: '商学院' },
-//   { label: '法学院', value: '法学院' }
-// ]);
+const collegeOptions = ref([
+  { label: '全部学院', value: '' },
+  { label: '农学院', value: '农学院' },
+  { label: '植物保护学院', value: '植物保护学院' },
+  { label: '园艺园林学院', value: '园艺园林学院' },
+  { label: '资源与环境学院', value: '资源与环境学院' },
+  { label: '工程学院', value: '工程学院' },
+  { label: '水利与土木工程学院', value: '水利与土木工程学院' },
+  { label: '动物科学技术学院', value: '动物科学技术学院' },
+  { label: '动物医学学院', value: '动物医学学院' },
+  { label: '生命科学学院', value: '生命科学学院' },
+  { label: '食品学院', value: '食品学院' },
+  { label: '经济管理学院', value: '经济管理学院' },
+  { label: '文理学院', value: '文理学院' },
+  { label: '艺术学院', value: '艺术学院' },
+  { label: '公共管理与法学院', value: '公共管理与法学院' },
+  { label: '马克思主义学院', value: '马克思主义学院' },
+  { label: '电气与信息学院', value: '电气与信息学院' },
+  { label: '国际文化教育学院', value: '国际文化教育学院' }
+]);
 
 // 计算属性 - 筛选后的候选人列表
 const filteredStaffs = computed(() => {
-  let result = staffList.value;
-  
+  let result = [...staffList.value]; // 创建副本避免直接修改原数组
+
   // 应用搜索筛选
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase();
-    result = result.filter(staff => 
+    result = result.filter((staff) =>
       staff.empName.toLowerCase().includes(query)
     );
   }
-  
+
   // 应用学院筛选
   if (collegeFilter.value) {
-    result = result.filter(staff => 
-      staff.empCollege === collegeFilter.value
-    );
+    result = result.filter((staff) => staff.empCollege === collegeFilter.value);
   }
-  
+
   // 应用状态筛选
   if (statusFilter.value !== "") {
-    result = result.filter(staff => 
-      staff.status === parseInt(statusFilter.value)
+    result = result.filter(
+      (staff) => staff.status === parseInt(statusFilter.value)
     );
   }
-  
+
+  // 确保已删除记录排在最后
+  result.sort((a, b) => a.isDelete - b.isDelete);
+
   return result;
 });
 
 // 状态文本映射函数
 const getStatusText = (status) => {
   const statusMap = {
-    0: '待参投',
-    1: '有效候选人',
-    2: '拟推荐人'
+    0: "待参投",
+    1: "有效候选人",
+    2: "拟推荐人",
   };
-  return statusMap[status] || '未知状态';
+  return statusMap[status] || "未知状态";
 };
 
 // 状态标签类型映射函数
 const getStatusType = (status) => {
   const typeMap = {
-    0: 'info',      // 待参投 - 信息蓝
-    1: 'success',   // 有效候选人 - 成功绿
-    2: 'warning'    // 拟推荐人 - 警告黄
+    0: "info", // 待参投 - 信息蓝
+    1: "success", // 有效候选人 - 成功绿
+    2: "warning", // 拟推荐人 - 警告黄
   };
-  return typeMap[status] || 'default';
+  return typeMap[status] || "default";
 };
 
 // 监听状态筛选变化
@@ -316,36 +334,37 @@ watch(collegeFilter, () => {
 const loadStaffList = async () => {
   loading.value = true;
   try {
-        const params = {
-          page: currentPage.value,
-          pageSize: pageSize.value, // 修正参数名称
-          empName: searchQuery.value,
-          empCollege: collegeFilter.value
-          // 移除isDelete过滤条件，加载所有记录
-        };
-        
-        const response = await getEmpPage(params);
-        console.log('API响应:', response);
-        
-        // 根据实际API响应格式 {total: 39, rows: Array(10)} 处理数据
-        let data = response.rows || [];
-        total.value = response.total || data.length;
-        
-        // 确保isDelete字段存在并为数字类型
-        data = data.map(item => ({
-          ...item,
-          isDelete: typeof item.isDelete === 'undefined' ? 0 : Number(item.isDelete),
-          status: typeof item.status === 'undefined' ? 0 : Number(item.status)
-        }));
-        
-        // 排序：未删除记录(isDelete=0)排在前面，已删除记录(isDelete=1)排在后面
-        staffList.value = data.sort((a, b) => a.isDelete - b.isDelete);
-      } catch (error) {
-        console.error("获取候选人列表异常:", error);
-        ElMessage.error("获取候选人列表异常");
-        staffList.value = [];
-        total.value = 0;
-      } finally {
+    const params = {
+      page: currentPage.value,
+      pageSize: pageSize.value, // 修正参数名称
+      empName: searchQuery.value,
+      empCollege: collegeFilter.value,
+      // 移除isDelete过滤条件，加载所有记录
+    };
+
+    const response = await getEmpPage(params);
+    console.log("候选人:", response);
+
+    // 根据实际API响应格式 {total: 39, rows: Array(10)} 处理数据
+    let data = response.rows || [];
+    total.value = response.total || data.length;
+
+    // 确保isDelete字段存在并为数字类型
+    data = data.map((item) => ({
+      ...item,
+      isDelete:
+        typeof item.isDelete === "undefined" ? 0 : Number(item.isDelete),
+      status: typeof item.status === "undefined" ? 0 : Number(item.status),
+    }));
+
+    // 排序：未删除记录(isDelete=0)排在前面，已删除记录(isDelete=1)排在后面
+    staffList.value = data.sort((a, b) => a.isDelete - b.isDelete);
+  } catch (error) {
+    console.error("获取候选人列表异常:", error);
+    ElMessage.error("获取候选人列表异常");
+    staffList.value = [];
+    total.value = 0;
+  } finally {
     loading.value = false;
   }
 };
@@ -358,8 +377,20 @@ const handleRefresh = () => {
 
 // 添加候选人
 const handleAddStaff = () => {
-  // TODO: 实现添加候选人功能
-  ElMessage.info("添加候选人功能开发中");
+  // 重置编辑表单
+  Object.assign(editForm, {
+    empId: '',
+    empName: '',
+    empPrePosition: '',
+    empCollege: '',
+    status: 0,
+    isDelete: 0,
+    voteNum: 0,
+    avoteNum: 0,
+    score: 0,
+  });
+  isEditMode.value = false;
+  editDialogVisible.value = true;
 };
 
 // 查看候选人详情
@@ -376,12 +407,13 @@ const handleEditStaff = (staff) => {
     empName: staff.empName,
     empPrePosition: staff.empPrePosition,
     empCollege: staff.empCollege,
-    status: Number(staff.status), // 确保为数字类型
-    isDelete: Number(staff.isDelete || 0), // 确保为数字类型
-    voteNum: Number(staff.voteNum || 0),
-    avoteNum: Number(staff.avoteNum || 0),
-    score: Number(staff.score || 0)
+    status: staff.status,
+    isDelete: typeof staff.isDelete === 'undefined' ? 0 : Number(staff.isDelete),
+    voteNum: staff.voteNum || 0,
+    avoteNum: staff.avoteNum || 0,
+    score: staff.score || 0,
   });
+  isEditMode.value = true;
   editDialogVisible.value = true;
 };
 
@@ -397,30 +429,37 @@ const handleDialogClose = () => {
 // 提交编辑
 const handleSubmitEdit = async () => {
   try {
-    // 构造请求数据，正高级使用empId作为标识
-    const updateData = {
+    // 构造请求数据
+    const formData = {
       empId: editForm.empId,
       empName: editForm.empName,
       empPrePosition: editForm.empPrePosition,
       empCollege: editForm.empCollege,
-      status: Number(editForm.status), // 确保为数字类型
-      isDelete: Number(editForm.isDelete), // 确保为数字类型
+      status: Number(editForm.status),
+      isDelete: Number(editForm.isDelete),
       voteNum: Number(editForm.voteNum),
       avoteNum: Number(editForm.avoteNum),
-      score: Number(editForm.score)
+      score: Number(editForm.score),
     };
-    
+
     loading.value = true;
-    // 调用更新接口
-    await updateEmp(updateData);
     
-    ElMessage.success("编辑成功");
+    if (isEditMode.value) {
+      // 编辑模式：调用更新接口
+      await updateEmp(formData);
+      ElMessage.success("编辑成功");
+    } else {
+      // 添加模式：调用添加接口
+      await addEmp(formData);
+      ElMessage.success("添加成功");
+    }
+
     handleDialogClose();
     // 重新加载列表
     loadStaffList();
   } catch (error) {
-    console.error("编辑候选人异常:", error);
-    ElMessage.error("编辑失败");
+    console.error("操作候选人异常:", error);
+    ElMessage.error(isEditMode.value ? "编辑失败" : "添加失败");
   } finally {
     loading.value = false;
   }
@@ -431,7 +470,7 @@ const handleToggleStatus = async (staff) => {
   // 确保状态在0、1、2之间循环切换
   const newStatus = (staff.status + 1) % 3;
   const statusText = getStatusText(newStatus);
-  
+
   try {
     await ElMessageBox.confirm(
       `确定要将候选人「${staff.empName}」状态修改为「${statusText}」吗？`,
@@ -439,14 +478,14 @@ const handleToggleStatus = async (staff) => {
       {
         confirmButtonText: "确定",
         cancelButtonText: "取消",
-        type: "warning"
+        type: "warning",
       }
     );
-    
+
     loading.value = true;
     // 调用更新接口
     await updateEmp({ ...staff, status: newStatus });
-    
+
     // 更新本地状态
     staff.status = newStatus;
     ElMessage.success(`状态修改为${statusText}成功`);
@@ -459,35 +498,25 @@ const handleToggleStatus = async (staff) => {
   }
 };
 
-// 删除候选人（软删除实现）
+// 删除候选人（直接调用删除接口）
 const handleDeleteStaff = async (empId) => {
   try {
-    await ElMessageBox.confirm(
-      "确定要删除该候选人吗？此操作将标记为已删除",
-      "警告",
-      {
-        confirmButtonText: "确定",
-        cancelButtonText: "取消",
-        type: "error"
-      }
-    );
-    
+    await ElMessageBox.confirm("确定要删除该候选人吗？此操作不可撤销", "确认删除", {
+      confirmButtonText: "确定",
+      cancelButtonText: "取消",
+      type: "error",
+    });
+
     loading.value = true;
-    // 找到要删除的候选人
-    const staffToDelete = staffList.value.find(staff => staff.empId === empId);
     
-    if (staffToDelete) {
-      // 软删除：更新isDelete字段为1而不是真正删除（1表示已删除）
-      await updateEmp({
-        ...staffToDelete,
-        isDelete: 1
-      });
-      
-      // 更新本地列表
-      staffList.value = staffList.value.filter(staff => staff.empId !== empId);
-      total.value = staffList.value.length;
-      ElMessage.success("删除成功");
-    }
+    // 直接调用删除接口
+    await deleteEmp([empId]);
+    
+    // 更新本地列表
+    staffList.value = staffList.value.filter((staff) => staff.empId !== empId);
+    total.value = staffList.value.length;
+    
+    ElMessage.success("删除成功");
   } catch (error) {
     if (error !== "cancel") {
       console.error("删除候选人异常:", error);

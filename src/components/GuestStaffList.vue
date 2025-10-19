@@ -117,7 +117,7 @@
     <!-- 编辑候选人弹窗 -->
     <el-dialog
       v-model="editDialogVisible"
-      title="编辑候选人信息"
+      :title="isEditMode ? '编辑候选人信息' : '添加候选人信息'"
       width="500px"
       :before-close="handleDialogClose"
     >
@@ -128,7 +128,7 @@
         class="mt-2"
       >
         <el-form-item label="候选人ID" disabled>
-          <el-input v-model="editForm.id" placeholder="自动生成" />
+          <el-input v-model="editForm.id" disabled placeholder="候选人ID" />
         </el-form-item>
         
         <el-form-item label="候选人姓名">
@@ -173,7 +173,7 @@
 import { ref, reactive, computed, onMounted, watch } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { Search, Refresh, Plus } from "@element-plus/icons-vue";
-import { getPageEmp2, addEmp2, updateEmp2, deleteEmp2 } from "../api/tbEmp2";
+import { getPageEmp2, updateEmp2, addEmp2, deleteEmp2 } from "../api/tbEmp2";
 
 // 响应式数据
 const searchQuery = ref("");
@@ -187,6 +187,7 @@ const pageSize = ref(10);
 // 编辑弹窗相关
 const editDialogVisible = ref(false);
 const editFormRef = ref();
+const isEditMode = ref(false);
 const editForm = reactive({
   id: '',
   name: '',
@@ -262,8 +263,21 @@ const handleRefresh = () => {
 
 // 添加候选人
 const handleAddStaff = () => {
-  // TODO: 实现添加候选人功能
-  ElMessage.info("添加候选人功能开发中");
+  // 重置编辑表单
+  Object.assign(editForm, {
+    id: '',
+    name: '',
+    position: '',
+    college: '',
+    status: 0,
+    isDelete: 0,
+    voteNum: 0,
+    positionVoteNum: 0,
+    collegeVoteNum: 0,
+    score: 0,
+  });
+  isEditMode.value = false;
+  editDialogVisible.value = true;
 };
 
 // 查看候选人详情
@@ -282,6 +296,7 @@ const handleEditStaff = (staff) => {
     status: staff.status,
     voteNum: staff.voteNum || 0
   });
+  isEditMode.value = true;
   editDialogVisible.value = true;
 };
 
@@ -297,26 +312,33 @@ const handleDialogClose = () => {
 // 提交编辑
 const handleSubmitEdit = async () => {
   try {
-    // 构造请求数据，使用id作为标识
-    const updateData = {
+    // 构造请求数据
+    const formData = {
       id: editForm.id,
       name: editForm.name,
       proTitle: editForm.proTitle,
       status: editForm.status,
       voteNum: editForm.voteNum
     };
-    
+
     loading.value = true;
-    // 调用更新接口
-    await updateEmp2(updateData);
     
-    ElMessage.success("编辑成功");
+    if (isEditMode.value) {
+      // 编辑模式：调用更新接口
+      await updateEmp2(formData);
+      ElMessage.success("编辑成功");
+    } else {
+      // 添加模式：调用添加接口
+      await addEmp2(formData);
+      ElMessage.success("添加成功");
+    }
+
     handleDialogClose();
     // 重新加载列表
     loadStaffList();
   } catch (error) {
-    console.error("编辑候选人异常:", error);
-    ElMessage.error("编辑失败");
+    console.error("操作候选人异常:", error);
+    ElMessage.error(isEditMode.value ? "编辑失败" : "添加失败");
   } finally {
     loading.value = false;
   }
@@ -355,43 +377,29 @@ const handleToggleStatus = async (staff) => {
   }
 };
 
-// 删除候选人（软删除实现）
+// 删除候选人（直接调用删除接口）
 const handleDeleteStaff = async (id) => {
   try {
-    await ElMessageBox.confirm(
-      "确定要将该候选人标记为已删除吗？",
-      "警告",
-      {
-        confirmButtonText: "确定",
-        cancelButtonText: "取消",
-        type: "warning"
-      }
-    );
-    
+    await ElMessageBox.confirm("确定要删除该候选人吗？此操作不可撤销", "确认删除", {
+      confirmButtonText: "确定",
+      cancelButtonText: "取消",
+      type: "error",
+    });
+
     loading.value = true;
-    // 找到要删除的候选人
-    const staffToDelete = staffList.value.find(staff => staff.id === id);
     
-    if (staffToDelete) {
-      // 软删除：更新isDelete字段为1而不是真正删除（1表示已删除）
-      await updateEmp2({
-        id: staffToDelete.id,
-        isDelete: 1
-      });
-      
-      // 更新本地列表中的isDelete状态并重新排序
-      const index = staffList.value.findIndex(staff => staff.id === id);
-      if (index !== -1) {
-        staffList.value[index].isDelete = 1;
-        // 重新排序，确保isDelete=0的记录在前面
-        staffList.value.sort((a, b) => a.isDelete - b.isDelete);
-      }
-      ElMessage.success("标记为已删除成功");
-    }
+    // 直接调用删除接口
+    await deleteEmp2([id]);
+    
+    // 更新本地列表
+    staffList.value = staffList.value.filter((staff) => staff.id !== id);
+    total.value = staffList.value.length;
+    
+    ElMessage.success("删除成功");
   } catch (error) {
     if (error !== "cancel") {
       console.error("删除候选人异常:", error);
-      ElMessage.error("标记删除失败");
+      ElMessage.error("删除失败");
     }
   } finally {
     loading.value = false;
