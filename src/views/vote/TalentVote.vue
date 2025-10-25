@@ -108,15 +108,17 @@
       <div class="flex items-center space-x-2">
         <label for="pageSize">每页显示：</label>
         <select
+          id="pageSize"
           v-model="pageSize"
           @change="handlePageSizeChange"
-          class="w-full border rounded px-2 py-1 text-sm"
+          class="border rounded-md px-2 py-1 text-sm"
         >
           <option value="5">5</option>
           <option value="10">10</option>
           <option value="20">20</option>
         </select>
       </div>
+
 
       <div class="text-sm text-gray-500">共 {{ total }} 条记录</div>
     </div>
@@ -131,7 +133,7 @@
 
     <!-- 教师列表 - 使用表格展示 -->
     <div v-else class="overflow-x-auto mb-6">
-      <table class="min-w-full border-collapse w-[900px] mx-auto">
+      <table class="min-w-full border-collapse w-full">
         <thead>
           <tr class="bg-blue-50">
             <th
@@ -310,10 +312,10 @@
       <button
         @click="submitVote"
         :disabled="
-          !canVote || selectedCount === 0 || selectedCount > activity.maxVoteNum
+          selectedCount === 0 || selectedCount > activity.maxVoteNum
         "
         class="px-8 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:bg-gray-300 font-medium"
-      >提交投票
+      >{{ hasVoted ? '点击修改投票' : '提交投票' }}
         </button>
       </div>
     </div>
@@ -329,7 +331,7 @@
 import { ref, onMounted, computed, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { getTbEmp1Page } from "@/api/tbEmp1";
-import { addVoteLogEmp1 } from "@/api/voteLogEmp1";
+import { addVoteLogEmp1, getPageVoteLogEmp1 } from "@/api/voteLogEmp1";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { useAuthStore } from '@/store/authStore';
 import UserModal from '@/components/user.vue';
@@ -365,6 +367,7 @@ const currentPage = ref(1);
 const pageSize = ref(10);
 const total = ref(0);
 const loading = ref(false);
+const hasVoted = ref(false); // 用户是否已经投过票
 
 // 查询条件
 const name = ref("");
@@ -396,7 +399,8 @@ const createVoteGradeGetterSetter = (teacherId, gradeType) => {
 
 // 计算属性：是否可以投票
 const canVote = computed(() => {
-  return activity.value.activityStatus === 1;
+  // 如果已经投过票，可以修改；否则检查活动状态
+  return hasVoted.value || activity.value.activityStatus === 1;
 });
 
 // 计算属性：已完成投票的教师数量
@@ -418,24 +422,73 @@ const selectedCount = computed(() => {
 // 加载教师列表
 const loadTeachers = async () => {
   try {
-    console.log("加载教师列表...");
     loading.value = true;
-    const params = {
-      page: currentPage.value,
-      pageSize: pageSize.value,
-      name: name.value || "",
-    };
-    const response = await getTbEmp1Page(params);
-    // 因为响应拦截器直接返回了data，所以这里的response实际上是response.data
-    console.log('API响应数据:', response);
-    if (response && response.rows) {
-      teachers.value = response.rows || [];
-      total.value = response.total || 0;
-      console.log('教师列表数据:', teachers.value);
+    const currentActivityId = parseInt(route.query.activityId) || 0;
+    console.log('当前活动ID:', currentActivityId);
+    
+    // 方法1：直接在请求参数中包含activityId，让后端筛选（优先）
+    if (currentActivityId > 0) {
+      console.log('使用后端筛选：直接在请求参数中指定activityId');
+      const params = {
+        page: 1, // 重置为第一页
+        pageSize: 100, // 适当增大页大小以获取更多数据
+        name: name.value || "",
+        activityId: currentActivityId // 直接传递活动ID给后端
+      };
+      
+      const response = await getTbEmp1Page(params);
+      console.log('获取到的教师列表响应:', response);
+      
+      // 确保正确获取数据部分
+      const responseData = response?.data || response;
+      
+      if (responseData && responseData.list) {
+        // 后端返回数据后，再进行前端二次筛选确保只显示当前活动的候选人
+        let rawList = responseData.list || [];
+        console.log('后端返回原始数据数量:', rawList.length);
+        
+        // 进行前端二次筛选
+        const filteredList = rawList.filter(item => Number(item.activityId) === currentActivityId);
+        console.log(`前端二次筛选后活动ID ${currentActivityId} 的候选人数量:`, filteredList.length);
+        
+        teachers.value = filteredList;
+        total.value = filteredList.length;
+        console.log('最终显示教师列表数量:', teachers.value.length);
+      } else {
+        teachers.value = [];
+        total.value = 0;
+      }
     } else {
-      teachers.value = [];
-      total.value = 0;
-      console.log('没有获取到有效数据');
+      // 方法2：查询所有分页数据然后前端筛选（当activityId未指定时）
+      let allTeachers = [];
+      let currentPageNum = 1;
+      let hasMoreData = true;
+      
+      while (hasMoreData) {
+        const params = {
+          page: currentPageNum,
+          pageSize: pageSize.value,
+          name: empName.value || ""
+        };
+        
+        const response = await getTbEmp1Page(params);
+        const responseData = response?.data || response;
+        
+        if (responseData && responseData.list) {
+          const pageData = responseData.list || [];
+          allTeachers = [...allTeachers, ...pageData];
+          
+          // 检查是否还有更多数据
+          hasMoreData = pageData.length >= pageSize.value && currentPageNum < 10; // 限制最大页数防止无限循环
+          currentPageNum++;
+        } else {
+          hasMoreData = false;
+        }
+      }
+      
+      console.log('获取的所有教师数据数量:', allTeachers.length);
+      teachers.value = allTeachers;
+      total.value = allTeachers.length;
     }
     console.log("加载教师列表完成");
   } catch (error) {
@@ -495,56 +548,87 @@ const submitVote = async () => {
   }
 
   try {
-    // 确认对话框
-    await ElMessageBox.confirm(
-      `确定要提交您的投票吗？共完成了${completedVotes.length}位教师的评审意见`,
-      "确认投票",
-      {
-        confirmButtonText: "确认",
-        cancelButtonText: "取消",
-        type: "info",
-      }
-    );
-
-    // 准备投票数据
-    const voteData = Object.keys(voteGrades.value)
-      .map((teacherId) => {
-        const grades = voteGrades.value[teacherId];
-        if (
-          grades &&
-          grades.voteGrade1 !== undefined &&
-          grades.voteGrade1 !== "" &&
-          grades.voteGrade2 !== undefined &&
-          grades.voteGrade2 !== "" &&
-          grades.voteGrade3 !== undefined &&
-          grades.voteGrade3 !== ""
-        ) {
-          return {
-          userId: parseInt(localStorage.getItem("userId") || ""),
-          activityId: parseInt(activityId),
-          empId: parseInt(teacherId),
-          voteGrade1: parseInt(grades.voteGrade1),
-          voteGrade2: parseInt(grades.voteGrade2),
-          voteGrade3: parseInt(grades.voteGrade3),
-        };
+      // 确认对话框
+      const confirmMessage = hasVoted.value
+        ? `确定要修改您的投票吗？共完成了${completedVotes.length}位教师的评审意见`
+        : `确定要提交您的投票吗？共完成了${completedVotes.length}位教师的评审意见`;
+        
+      await ElMessageBox.confirm(
+        confirmMessage,
+        "确认投票",
+        {
+          confirmButtonText: "确认",
+          cancelButtonText: "取消",
+          type: "info",
         }
-        return null;
-      })
-      .filter((item) => item !== null);
+      );
 
-    await addVoteLogEmp1(voteData);
-    ElMessage.success("投票成功");
+      // 准备投票数据
+      const voteData = Object.keys(voteGrades.value)
+        .map((teacherId) => {
+          const grades = voteGrades.value[teacherId];
+          if (
+            grades &&
+            grades.voteGrade1 !== undefined &&
+            grades.voteGrade1 !== "" &&
+            grades.voteGrade2 !== undefined &&
+            grades.voteGrade2 !== "" &&
+            grades.voteGrade3 !== undefined &&
+            grades.voteGrade3 !== ""
+          ) {
+            return {
+            userId: parseInt(localStorage.getItem("userId") || ""),
+            activityId: parseInt(activityId),
+            empId: parseInt(teacherId),
+            voteGrade1: parseInt(grades.voteGrade1),
+            voteGrade2: parseInt(grades.voteGrade2),
+            voteGrade3: parseInt(grades.voteGrade3),
+          };
+          }
+          return null;
+        })
+        .filter((item) => item !== null);
 
-    // 禁用投票功能
-    activity.value.activityStatus = 2;
-  } catch (error) {
-    if (error === "cancel") {
-      // 用户取消操作
-      return;
+      console.log('开始发送投票请求');
+      const response = await addVoteLogEmp1(voteData);
+      console.log('投票请求响应:', response);
+      ElMessage.success(hasVoted.value ? "投票修改成功" : "投票成功");
+      hasVoted.value = true;
+
+      // 注意：如果是修改投票，我们不应该禁用投票功能
+    } catch (error) {
+      if (error === "cancel") {
+        // 用户取消操作
+        return;
+      }
+      console.error('投票失败详情:', error);
+      
+      // 使用增强的错误上下文信息提供更详细的错误消息
+        let errorMessage = '投票请求失败';
+        
+        if (error.responseData && error.responseData.msg) {
+          errorMessage = `投票失败: ${error.responseData.msg}`;
+        } else if (error.status) {
+          switch (error.status) {
+            case 401:
+            case 403:
+              errorMessage = '投票失败: 权限不足，请重新登录';
+              break;
+            case 404:
+              errorMessage = '投票失败: 请求的投票接口不存在';
+              break;
+            case 500:
+              errorMessage = '投票失败: 服务器内部错误，请稍后重试或联系管理员';
+              break;
+            default:
+              errorMessage = `投票失败: ${error.message || '未知错误'}`;
+          }
+        } else if (!error.originalError || !error.originalError.response) {
+          errorMessage = '投票失败: 网络连接异常，请检查网络后重试';
+        }
+      
+      ElMessage.error(errorMessage);
     }
-    console.error("投票失败：", error);
-    ElMessage.error("投票失败，请重试");
-  }
 };
 
 // 返回按钮处理函数
@@ -564,6 +648,40 @@ defineExpose({
   goBack,
 });
 
+// 检查用户是否已经投过票
+const checkUserVoteHistory = async () => {
+  try {
+    const userId = authStore.userId;
+    if (!userId) return;
+    
+    // 查询用户的投票记录
+    const response = await getPageVoteLogEmp1(1, 100);
+    if (response && response.data && response.data.list) {
+      // 筛选出当前活动的投票记录
+      const userActivityVotes = response.data.list.filter(
+        record => record.userId === parseInt(userId) && record.activityId === parseInt(activityId)
+      );
+      
+      if (userActivityVotes.length > 0) {
+        hasVoted.value = true;
+        // 加载用户之前的投票结果
+        userActivityVotes.forEach(record => {
+          if (record.empId) {
+            voteGrades.value[record.empId] = {
+              voteGrade1: record.voteGrade1?.toString() || "",
+              voteGrade2: record.voteGrade2?.toString() || "",
+              voteGrade3: record.voteGrade3?.toString() || ""
+            };
+          }
+        });
+      }
+    }
+  } catch (error) {
+    console.error("检查投票历史失败：", error);
+    // 失败时不影响正常使用
+  }
+};
+
 // 初始化页面
 onMounted(() => {
   // 获取活动信息
@@ -575,8 +693,9 @@ onMounted(() => {
   };
 
   // 加载教师列表
-  loadTeachers();
-  
-  
+  loadTeachers().then(() => {
+    // 教师列表加载完成后，检查用户是否已经投过票
+    checkUserVoteHistory();
+  });
 });
 </script>

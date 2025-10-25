@@ -22,12 +22,26 @@
         <el-input
           v-model="searchQuery"
           placeholder="搜索候选人姓名"
-          style="width: 300px; margin-right: 10px"
+          style="width: 200px; margin-right: 10px"
         >
           <template #prefix>
             <el-icon><Search /></el-icon>
           </template>
         </el-input>
+
+        <el-select
+          v-model="activityFilter"
+          placeholder="选择活动"
+          style="width: 180px; margin-right: 10px"
+        >
+          <el-option label="全部活动" :value="null" />
+          <el-option 
+            v-for="activity in activities" 
+            :key="activity.activityId || activity.id" 
+            :label="activity.activityName || activity.title" 
+            :value="activity.activityId || activity.id"
+          />
+        </el-select>
 
         <el-select
           v-model="statusFilter"
@@ -46,7 +60,7 @@
         <el-table-column prop="id" label="候选人ID" />
         <el-table-column prop="name" label="候选人姓名" />
         <el-table-column prop="proTitle" label="聘任类型" />
-        <el-table-column label="状态">
+        <el-table-column label="状态" min-width="100">
           <template #default="scope">
             <el-tag
               :type="getStatusType(scope.row.status)"
@@ -55,7 +69,12 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="voteNum" label="总投票数" />
+        <el-table-column prop="activityId" label="所属活动" width="150">
+          <template #default="scope">
+            {{ getActivityNameById(scope.row.activityId) }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="voteNum" label="总票数" />
         <el-table-column label="操作" min-width="250">
           <template #default="scope">
             <div class="flex space-x-1">
@@ -146,6 +165,17 @@
             <el-option label="拟推荐人" :value="2" />
           </el-select>
         </el-form-item>
+        
+        <el-form-item label="所属活动">
+          <el-select v-model="editForm.activityId" placeholder="请选择所属活动">
+            <el-option 
+              v-for="activity in activities" 
+              :key="activity.activityId || activity.id" 
+              :label="activity.activityName || activity.title" 
+              :value="activity.activityId || activity.id"
+            />
+          </el-select>
+        </el-form-item>
       </el-form>
       
       <template #footer>
@@ -173,16 +203,19 @@
 import { ref, reactive, computed, onMounted, watch } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { Search, Refresh, Plus } from "@element-plus/icons-vue";
-import { getPageEmp2, updateEmp2, addEmp2, deleteEmp2 } from "../api/tbEmp2";
+import { getPageEmp2, addEmp2, updateEmp2, deleteEmp2 } from "../api/tbEmp2";
+import { getActivityEmp2s } from "../api/activityEmp2";
 
 // 响应式数据
 const searchQuery = ref("");
 const statusFilter = ref("");
+const activityFilter = ref(null); // 活动筛选变量
 const loading = ref(false);
 const staffList = ref([]);
 const total = ref(0);
 const currentPage = ref(1);
 const pageSize = ref(10);
+const activities = ref([]); // 存储活动列表
 
 // 编辑弹窗相关
 const editDialogVisible = ref(false);
@@ -193,8 +226,37 @@ const editForm = reactive({
   name: '',
   proTitle: '',
   status: 0,
-  voteNum: 0
+  voteNum: 0,
+  activityId: null
 });
+
+// 加载活动列表
+const loadActivities = async () => {
+  try {
+    const data = await getActivityEmp2s();
+    let activitiesList = data || [];
+    
+    // 按活动ID降序排序，确保最新的活动在前面
+    activitiesList.sort((a, b) => {
+      const idA = Number(a.activityId || a.id) || 0;
+      const idB = Number(b.activityId || b.id) || 0;
+      return idB - idA; // 降序排列
+    });
+    
+    activities.value = activitiesList;
+    
+    // 如果有活动且尚未选择活动，则默认选择最新的活动
+    if (activitiesList.length > 0 && activityFilter.value === null) {
+      activityFilter.value = activitiesList[0].activityId || activitiesList[0].id;
+      console.log("默认选择最新活动:", activityFilter.value);
+    }
+    
+    console.log("加载活动数据成功:", activitiesList);
+  } catch (error) {
+    console.error("获取活动列表异常:", error);
+    activities.value = [];
+  }
+};
 
 // 计算属性 - 筛选后的候选人列表
 const filteredStaffs = computed(() => {
@@ -205,6 +267,13 @@ const filteredStaffs = computed(() => {
     const query = searchQuery.value.toLowerCase();
     result = result.filter(staff => 
       staff.name.toLowerCase().includes(query)
+    );
+  }
+  
+  // 应用活动筛选
+  if (activityFilter.value !== null && activityFilter.value !== undefined && activityFilter.value !== '') {
+    result = result.filter(staff => 
+      staff.activityId === activityFilter.value
     );
   }
   
@@ -223,6 +292,11 @@ watch(statusFilter, () => {
   loadStaffList();
 });
 
+// 监听活动筛选变化
+watch(activityFilter, () => {
+  loadStaffList();
+});
+
 // 加载候选人列表
 const loadStaffList = async () => {
   loading.value = true;
@@ -230,15 +304,16 @@ const loadStaffList = async () => {
     const params = {
       page: currentPage.value,
       pageSize: pageSize.value,
-      empName: searchQuery.value
-      // 加载所有记录，包括已标记删除的
+      empName: searchQuery.value,
+      // 添加活动筛选参数
+      activityId: activityFilter.value !== null ? activityFilter.value : undefined,
+      isDelete: 0 // 默认只加载未删除的记录
     };
     
     const response = await getPageEmp2(params);
     console.log('API响应:', response);
     
-    // 根据实际API响应格式处理并添加排序逻辑
-    const data = response.rows || [];
+    const data = response.list || [];
     // 确保isDelete字段为数字类型并按isDelete排序（0在前，1在后）
     staffList.value = data.map(item => ({
       ...item,
@@ -267,14 +342,10 @@ const handleAddStaff = () => {
   Object.assign(editForm, {
     id: '',
     name: '',
-    position: '',
-    college: '',
+    proTitle: '',
     status: 0,
-    isDelete: 0,
     voteNum: 0,
-    positionVoteNum: 0,
-    collegeVoteNum: 0,
-    score: 0,
+    activityId: null
   });
   isEditMode.value = false;
   editDialogVisible.value = true;
@@ -294,7 +365,8 @@ const handleEditStaff = (staff) => {
     name: staff.name,
     proTitle: staff.proTitle,
     status: staff.status,
-    voteNum: staff.voteNum || 0
+    voteNum: staff.voteNum || 0,
+    activityId: staff.activityId || null
   });
   isEditMode.value = true;
   editDialogVisible.value = true;
@@ -318,7 +390,8 @@ const handleSubmitEdit = async () => {
       name: editForm.name,
       proTitle: editForm.proTitle,
       status: editForm.status,
-      voteNum: editForm.voteNum
+      voteNum: editForm.voteNum,
+      activityId: editForm.activityId !== null ? Number(editForm.activityId) : null
     };
 
     loading.value = true;
@@ -409,11 +482,20 @@ const handleDeleteStaff = async (id) => {
 // 状态文本映射函数
 const getStatusText = (status) => {
   const statusMap = {
-    0: '待参投',
-    1: '有效候选人',
-    2: '拟推荐人'
+    0: "待参投",
+    1: "有效候选人",
+    2: "拟推荐人",
   };
-  return statusMap[status] || '未知状态';
+  return statusMap[status] || "未知状态";
+};
+
+// 根据活动ID获取活动名称
+const getActivityNameById = (activityId) => {
+  if (!activityId) return '';
+  const activity = activities.value.find(act => 
+    act.activityId === activityId || act.id === activityId
+  );
+  return activity ? (activity.activityName || activity.title || activityId) : activityId;
 };
 // 状态标签类型映射函数
 const getStatusType = (status) => {
@@ -437,8 +519,11 @@ const handleCurrentChange = (newCurrent) => {
 };
 
 // 组件挂载时加载数据
-onMounted(() => {
-  loadStaffList();
+onMounted(async () => {
+  // 先加载活动列表，以确定默认活动
+  await loadActivities();
+  // 然后加载候选人列表
+  await loadStaffList();
 });
 </script>
 

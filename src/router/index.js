@@ -66,8 +66,11 @@ const router = createRouter({
   routes,
 });
 
-// 本地没有token就跳到登录界面
+// 增强的路由守卫：处理token验证和过期检查
 router.beforeEach(async (to, from, next) => {
+  // 检查是否需要认证
+  const requiresAuth = to.matched.some(record => record.meta?.requestAuth !== false);
+  
   // 登录页直接放行
   if (to.path === "/login") {
     next();
@@ -77,23 +80,34 @@ router.beforeEach(async (to, from, next) => {
   try {
     // 尝试获取authStore（异步）
     const authStore = await getAuthStore();
-    const hasToken = authStore.token || localStorage.getItem('token');
+    const token = authStore.token || localStorage.getItem('token');
     
-    if (hasToken) {
-      next();
+    // 检查token是否存在且格式合理
+    const isValidToken = token && typeof token === 'string' && token.trim().length > 0;
+    
+    if (requiresAuth) {
+      // 需要认证的路由
+      if (isValidToken) {
+        next();
+      } else {
+        // 没有有效token，强制跳转登录页并记录来源地址
+        next(`/login?redirect=${to.fullPath}`);
+      }
     } else {
-      // 强制跳转登录页并记录来源地址
-      next(`/login?redirect=${to.fullPath}`);
+      // 不需要认证的路由
+      next();
     }
   } catch (error) {
     // 如果获取store失败，直接检查localStorage
     console.warn('获取authStore失败，使用localStorage检查token:', error);
-    const hasToken = localStorage.getItem('token');
+    const token = localStorage.getItem('token');
     
-    if (hasToken) {
-      next();
-    } else {
+    if (requiresAuth && (!token || typeof token !== 'string' || token.trim().length === 0)) {
+      // 需要认证但没有有效token
       next(`/login?redirect=${to.fullPath}`);
+    } else {
+      // 继续导航
+      next();
     }
   }
 });

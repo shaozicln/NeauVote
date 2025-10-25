@@ -41,10 +41,13 @@ const username = ref('')
 onMounted(() => {
   checkLoginStatus()
   
-  // 如果没有登录信息且不在登录页，则显示提示并跳转到登录页
-  if (!isLoggedIn.value && route.path !== '/login' && route.path !== '/404') {
-    console.log('未检测到用户信息，显示提示并跳转到登录页面')
-    ElMessage.info('尚无用户信息，请登录')
+  // 如果没有登录信息或token无效且不在登录页，则显示提示并跳转到登录页
+  const hasToken = localStorage.getItem('token')
+  const isValidToken = hasToken && typeof hasToken === 'string' && hasToken.trim().length > 0 && hasToken.length > 10;
+  
+  if ((!isLoggedIn.value || !isValidToken) && route.path !== '/login' && route.path !== '/404') {
+    console.log('未检测到有效用户信息，显示提示并跳转到登录页面')
+    ElMessage.info('登录已过期，请重新登录')
     // 延迟一小段时间后跳转，让用户有时间看到提示信息
     setTimeout(() => {
       router.push('/login')
@@ -58,19 +61,37 @@ onMounted(() => {
   })
 })
 
-// 检查登录状态
+// 检查登录状态和token有效性
 function checkLoginStatus() {
   const token = localStorage.getItem('token')
   const userPosition = localStorage.getItem('position')
   const userUsername = localStorage.getItem('username')
   
-  if (token) {
+  // 验证token格式是否有效
+  const isValidToken = token && typeof token === 'string' && token.trim().length > 0 && token.length > 10; // 简单检查token长度
+  
+  if (isValidToken) {
     isLoggedIn.value = true
     username.value = userUsername || '用户'
     
     // 检查是否是管理员
     if (userPosition && userPosition.includes('管理员')) {
       isAdmin.value = true
+    }
+  } else if (token && (!isValidToken || token === 'undefined' || token === 'null')) {
+    // 发现无效token，清除并重定向到登录页
+    console.log('检测到无效token，清除并重定向到登录页')
+    localStorage.removeItem('token')
+    localStorage.removeItem('username')
+    localStorage.removeItem('position')
+    localStorage.removeItem('userId')
+    sessionStorage.clear()
+    
+    // 跳转到登录页
+    if (route.path !== '/login') {
+      setTimeout(() => {
+        router.push('/login')
+      }, 100)
     }
   }
 }
@@ -185,8 +206,5 @@ const adminButtonText = computed(() => {
 @tailwind components;
 @tailwind utilities;
 
-/* 一些全局样式来测试是否生效 */
-body {
-  font-family: 'Inter', system-ui, sans-serif;
-}
+
 </style>

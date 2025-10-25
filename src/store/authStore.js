@@ -24,19 +24,30 @@ export const useAuthStore = defineStore('auth', {
     },
      // 清除认证信息时添加路由跳转（退出登录或token失效时调用）
     clearAuthInfo() {
+      console.log('执行clearAuthInfo，清除认证信息')
+      // 清空状态
       this.token = ''
       this.username = ''
       this.position = ''
       this.userId = ''
+      
+      // 清除本地存储
       localStorage.removeItem('token')
       localStorage.removeItem('username')
       localStorage.removeItem('position')
       localStorage.removeItem('userId')
       
-      // 主动跳转到登录页
-      if (router.currentRoute.value.path !== '/login') {
-        router.push('/login')
-      }
+      // 清除sessionStorage中的相关信息
+      sessionStorage.removeItem('token')
+      sessionStorage.removeItem('userInfo')
+      
+      // 主动跳转到登录页，确保在非登录页面时跳转
+      setTimeout(() => {
+        if (router.currentRoute.value.path !== '/login') {
+          console.log('跳转到登录页面')
+          router.push('/login')
+        }
+      }, 100)
     }
   }
 })

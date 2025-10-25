@@ -59,8 +59,8 @@
           </template>
         </el-table-column>
         <el-table-column prop="maxVoteNum" label="最大投票数" />
-        <el-table-column prop="amaxVoteNum" label="最大A票数" />
-        <el-table-column prop="recNum" label="推荐数" />
+          <!-- <el-table-column prop="amaxVoteNum" label="最大A票数" /> -->
+          <el-table-column prop="recNum" label="推荐数" />
         <el-table-column label="是否记名">
           <template #default="scope">
             <el-tag :type="scope.row.isName === 1 ? 'success' : 'warning'">
@@ -68,6 +68,7 @@
             </el-tag>
           </template>
         </el-table-column>
+        <el-table-column prop="voteRound" label="轮次" />
         <el-table-column label="操作" min-width="250">
           <template #default="scope">
             <div class="flex space-x-1">
@@ -153,11 +154,28 @@
           />
         </el-form-item>
 
-        <el-form-item label="最大A票数" prop="amaxVoteNum">
+        <!-- 最大A票数自动设置为与最大投票数相同，不需要手动输入 -->
+        <!-- <el-form-item label="最大A票数">
           <el-input
-            v-model.number="editVoteFormData.amaxVoteNum"
+            :value="editVoteFormData.maxVoteNum"
+            disabled
+            placeholder="自动设置为与最大投票数相同"
+          />
+        </el-form-item> -->
+
+        <el-form-item label="轮次" prop="voteRound">
+          <el-input
+            v-model.number="editVoteFormData.voteRound"
             type="number"
-            placeholder="请输入最大A票数"
+            placeholder="请输入轮次"
+          />
+        </el-form-item>
+
+        <el-form-item label="推荐数" prop="recNum">
+          <el-input
+            v-model.number="editVoteFormData.recNum"
+            type="number"
+            placeholder="请输入推荐数"
           />
         </el-form-item>
 
@@ -225,6 +243,7 @@ const editVoteFormData = reactive({
   activityName: "",
   maxVoteNum: 10,
   amaxVoteNum: 5,
+  recNum: 0,
   activityStatus: 0,
   isName: 1,
 });
@@ -239,15 +258,11 @@ const rules = {
     { required: true, message: "请输入最大投票数", trigger: "blur" },
     { type: "number", min: 1, message: "最大投票数必须大于0", trigger: "blur" },
   ],
-  amaxVoteNum: [
-    { required: true, message: "请输入最大A票数", trigger: "blur" },
-    {
-      type: "number",
-      min: 0,
-      message: "最大A票数必须大于等于0",
-      trigger: "blur",
-    },
+  recNum: [
+    { required: false, message: "请输入推荐数", trigger: "blur" },
+    { type: "number", min: 0, message: "推荐数必须大于等于0", trigger: "blur" },
   ],
+  // 最大A票数不需要验证，会自动设置为与最大投票数相同,
 };
 
 // 监听状态筛选变化
@@ -354,7 +369,8 @@ const handleAddVote = () => {
     activityId: "",
     activityName: "",
     maxVoteNum: "",
-    amaxVoteNum: "",
+    recNum: 0,
+    // 最大A票数会自动设置为与maxVoteNum相同
     activityStatus: true, // true: 进行中 (switch组件使用布尔值)
     isName: false, // false: 不记名 (switch组件使用布尔值)
   });
@@ -368,7 +384,8 @@ const handleEditVote = (vote) => {
     activityId: vote.activityId || vote.id,
     activityName: vote.activityName || vote.title,
     maxVoteNum: vote.maxVoteNum || 10,
-    amaxVoteNum: vote.amaxVoteNum || 5,
+    recNum: vote.recNum || 0,
+    // amaxVoteNum会在保存时自动设置
     activityStatus: Boolean(vote.activityStatus),
     isName: Boolean(vote.isName),
   });
@@ -391,7 +408,10 @@ const handleSaveVote = async () => {
 
     // 确保数值类型正确
     voteData.maxVoteNum = Number(voteData.maxVoteNum);
-    voteData.amaxVoteNum = Number(voteData.amaxVoteNum);
+    // 最大A票数自动设置为与最大投票数相同
+    voteData.amaxVoteNum = voteData.maxVoteNum;
+    // 确保推荐数类型正确
+    voteData.recNum = Number(voteData.recNum);
     voteData.activityStatus = Number(voteData.activityStatus);
     voteData.isName = Number(voteData.isName);
 
