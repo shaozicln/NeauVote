@@ -1,6 +1,6 @@
 <template>
   <div class="senior-msg-container">
-    <h2 class="title">投票结果信息统计</h2>
+    <h2 class="title">正/副高级职称投票结果信息统计</h2>
 
     <div class="filter-container">
       <el-form :inline="true" :model="filterForm">
@@ -16,6 +16,7 @@
             style="width: 200px"
             @change="handleActivityChange"
           >
+            <el-option label="全部活动" :value="null" />
             <el-option
               v-for="activity in activities"
               :key="activity.activityId"
@@ -133,11 +134,21 @@ const loadActivities = async () => {
   try {
     loading.value = true;
     const response = await getActivities();
-    activities.value = Array.isArray(response) ? response : [];
+    let activitiesList = Array.isArray(response) ? response : [];
+    
+    // 按活动ID降序排序，确保最新的活动在前面
+    activitiesList.sort((a, b) => {
+      const idA = Number(a.activityId) || 0;
+      const idB = Number(b.activityId) || 0;
+      return idB - idA; // 降序排列
+    });
+    
+    activities.value = activitiesList;
 
-    // 默认选择第一个活动
-    if (activities.value.length > 0) {
-      selectedActivityId.value = activities.value[0].activityId;
+    // 如果有活动且尚未选择活动，则默认选择最新的活动
+    if (activitiesList.length > 0 && !selectedActivityId.value) {
+      selectedActivityId.value = activitiesList[0].activityId;
+      console.log("默认选择最新活动:", selectedActivityId.value);
       await loadVoteData(selectedActivityId.value);
     }
   } catch (error) {
@@ -150,9 +161,11 @@ const loadActivities = async () => {
 
 // 加载投票数据 - 根据选择的activityId调用/voteShows/emp/{activityId}
 const loadVoteData = async (activityId) => {
+  // 支持全部活动选项
+  selectedRound.value = "";
+  
   if (!activityId) {
     voteData.value = [];
-    selectedRound.value = "";
     return;
   }
 
@@ -386,5 +399,11 @@ onMounted(() => {
   justify-content: center;
   align-items: center;
   height: 200px;
+}
+
+.current-activity-name {
+  font-weight: bold;
+  color: #409eff;
+  margin-right: 20px;
 }
 </style>

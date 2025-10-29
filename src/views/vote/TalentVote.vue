@@ -1,6 +1,5 @@
 <template>
   <div class="container mx-auto p-4">
-    <!-- 页面标题 -->
     <div class="mb-6">
       <!-- 返回按钮和个人信息 -->
       <div class="mb-4 flex justify-between items-center">

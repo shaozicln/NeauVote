@@ -3,7 +3,7 @@
     <el-card>
       <template #header>
         <div class="card-header flex justify-between items-center">
-          <span class="text-lg font-medium">正高级职称投票管理</span>
+          <span class="text-lg font-medium">正/副高级职称投票管理</span>
           <div class="header-actions">
             <el-button type="primary" @click="handleAddVote" class="mr-2">
               <el-icon><Plus /></el-icon>

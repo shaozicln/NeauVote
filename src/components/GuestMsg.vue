@@ -16,6 +16,7 @@
             style="width: 200px"
             @change="handleActivityChange"
           >
+            <el-option label="全部活动" :value="null" />
             <el-option
               v-for="activity in activities"
               :key="activity.activityId"
@@ -78,7 +79,7 @@ import { getAllEmp2 } from '@/api/tbEmp2'
 const loading = ref(false)
 const voteData = ref({})
 const activities = ref([])
-const selectedActivityId = ref(1) // 默认选中活动ID 1
+const selectedActivityId = ref(null) // 默认选择null，后续会自动选择最新活动
 const currentActivityName = ref('')
 const tbEmp2List = ref([])
 const tbEmp2Map = ref({}) // ID到姓名的映射
@@ -143,12 +144,29 @@ const loadActivities = async () => {
   try {
     loading.value = true;
     const response = await getActivityEmp2s();
-    activities.value = Array.isArray(response) ? response : [];
+    let activitiesList = Array.isArray(response) ? response : [];
+    
+    // 按活动ID降序排序，确保最新的活动在前面
+    activitiesList.sort((a, b) => {
+      const idA = Number(a.activityId) || 0;
+      const idB = Number(b.activityId) || 0;
+      return idB - idA; // 降序排列
+    });
+    
+    activities.value = activitiesList;
+    
+    // 如果有活动且尚未选择活动，则默认选择最新的活动
+    if (activitiesList.length > 0 && selectedActivityId.value === null) {
+      selectedActivityId.value = activitiesList[0].activityId;
+      console.log("默认选择最新活动:", selectedActivityId.value);
+    }
     
     // 根据selectedActivityId找到对应的活动名称
-    const defaultActivity = activities.value.find(act => act.activityId === selectedActivityId.value);
-    if (defaultActivity) {
-      currentActivityName.value = defaultActivity.activityName;
+    if (selectedActivityId.value !== null) {
+      const defaultActivity = activities.value.find(act => act.activityId === selectedActivityId.value);
+      if (defaultActivity) {
+        currentActivityName.value = defaultActivity.activityName;
+      }
     }
   } catch (error) {
     console.error("加载活动列表失败:", error);
@@ -181,9 +199,16 @@ const loadTbEmp2List = async () => {
 };
 
 // 加载投票数据
-const loadVoteData = async (activityId = 1) => {
-  if (!activityId) {
-    voteData.value = {};
+const loadVoteData = async (activityId = null) => {
+  // 使用传入的activityId或当前选中的activityId
+  const targetActivityId = activityId !== null ? activityId : selectedActivityId.value;
+  
+  // 清除之前的数据
+  voteData.value = {};
+  
+  // 如果选择了全部活动(null)，则可以在这里加载所有活动的数据
+  // 目前先保持为空对象
+  if (targetActivityId === null) {
     return;
   }
 
@@ -216,10 +241,17 @@ const loadVoteData = async (activityId = 1) => {
 // 处理活动选择变化
 const handleActivityChange = async (activityId) => {
   selectedActivityId.value = activityId;
-  const activity = activities.value.find(act => act.activityId === activityId);
-  if (activity) {
-    currentActivityName.value = activity.activityName;
+  
+  // 更新当前活动名称
+  if (activityId === null) {
+    currentActivityName.value = '全部活动';
+  } else {
+    const activity = activities.value.find(act => act.activityId === activityId);
+    if (activity) {
+      currentActivityName.value = activity.activityName;
+    }
   }
+  
   await loadVoteData(activityId);
 };
 
@@ -229,7 +261,9 @@ onMounted(async () => {
   // 再加载候选人信息
   await loadTbEmp2List();
   // 最后加载默认活动的投票数据
-  await loadVoteData(selectedActivityId.value);
+  if (selectedActivityId.value !== null) {
+    await loadVoteData(selectedActivityId.value);
+  }
 });
 </script>
 

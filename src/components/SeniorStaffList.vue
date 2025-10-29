@@ -3,7 +3,7 @@
     <el-card>
       <template #header>
         <div class="card-header flex justify-between items-center">
-          <span class="text-lg font-medium">正高级职称候选人管理</span>
+          <span class="text-lg font-medium">正/副高级职称候选人管理</span>
           <div class="header-actions">
             <el-button type="primary" @click="handleAddStaff" class="mr-2">
               <el-icon><Plus /></el-icon>
@@ -91,10 +91,10 @@
             {{ scope.row.isDelete === 1 ? "删除" : "正常" }}
           </template>
         </el-table-column> -->
-        <el-table-column prop="voteNum" label="同意票数" />
+        <!-- <el-table-column prop="voteNum" label="同意票数" />
         <el-table-column prop="avoteNum" label="A票数" />
         <el-table-column prop="bvoteNum" label="B票数" />
-        <el-table-column prop="cvoteNum" label="C票数" />
+        <el-table-column prop="cvoteNum" label="C票数" /> -->
 
         <el-table-column prop="score" label="总分数" />
         <el-table-column prop="activityId" label="所属活动" width="150">

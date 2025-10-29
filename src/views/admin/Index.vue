@@ -46,7 +46,7 @@
         <el-sub-menu index="2">
           <template #title>
             <el-icon><Rank /></el-icon>
-            <span v-if="isSidebarOpen">正高级职称投票</span>
+            <span v-if="isSidebarOpen">正/副高级职称投票</span>
           </template>
           <el-menu-item index="2-1">投票管理</el-menu-item>
           <el-menu-item index="2-2">信息统计</el-menu-item>
@@ -55,7 +55,7 @@
         <el-sub-menu index="3">
           <template #title>
             <el-icon><Star /></el-icon>
-            <span v-if="isSidebarOpen">拟引进优秀人才投票</span>
+            <span v-if="isSidebarOpen">拟引进优秀人才</span>
           </template>
           <el-menu-item index="3-1">投票管理</el-menu-item>
           <el-menu-item index="3-2">信息统计</el-menu-item>
@@ -64,7 +64,7 @@
         <el-sub-menu index="4">
           <template #title>
             <el-icon><Briefcase /></el-icon>
-            <span v-if="isSidebarOpen">客座教授引进意见投票</span>
+            <span v-if="isSidebarOpen">客座教授引进意见</span>
           </template>
           <el-menu-item index="4-1">投票管理</el-menu-item>
           <el-menu-item index="4-2">信息统计</el-menu-item>
@@ -255,11 +255,10 @@ onUnmounted(() => {
 .collapsed-toggle {
   position: absolute;
   top: 5px;
-  right: -14px; /* 确保按钮突出显示在侧边栏外部 */
-  z-index: 1000; /* 极高的z-index确保始终显示在最上层 */
+  right: 0px;
+  z-index: 1000;
   background-color: #ffffff;
   border: 1px solid #dcdfe6;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   width: 30px;
   height: 30px;
 }
