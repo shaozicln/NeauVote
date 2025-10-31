@@ -1,25 +1,29 @@
+
 <template>
-  <div class="admin-container">
+  <div class="flex h-screen overflow-hidden relative">
     <!-- 侧边栏 -->
     <el-aside 
       :width="isSidebarOpen ? '200px' : '50px'" 
-      class="sidebar-container bg-white shadow-md transition-all duration-300 ease-in-out"
+      class="h-full z-10 flex flex-col overflow-visible relative bg-white shadow-md transition-all duration-300 ease-in-out"
     >
       
       <!-- 折叠状态下的侧边栏展开按钮 -->
       <div 
-        class="sidebar-toggle collapsed-toggle" 
+        style="position: absolute; top: 40px; right: -15px; z-index: 2000; background-color: white; border: 1px solid #dcdfe6; width: 30px; height: 30px; border-radius: 6px; display: flex; justify-content: center; align-items: center; cursor: pointer; background-color: #f0f2f5; transition: all 0.3s ease;"
+        @mouseenter="e => e.target.style.backgroundColor = '#e6f3ff'"
+        @mouseleave="e => e.target.style.backgroundColor = '#f0f2f5'"
         @click="toggleSidebar"
         v-if="!isSidebarOpen"
       >
-        <el-icon>
+        <el-icon style="color: #409eff; font-size: 16px;">
           <ArrowRight />
         </el-icon>
       </div>
       
       <el-menu
         :default-active="activeMenu"
-        class="el-menu-vertical-demo"
+        class="border-r-0 h-full mt-0"
+        :class="{ 'pt-9': !isSidebarOpen }"
         @select="handleMenuSelect"
         :collapse="!isSidebarOpen"
         :collapse-transition="true"
@@ -35,11 +39,11 @@
         
         <!-- 侧边栏切换按钮 - 展开状态 -->
         <div 
-          class="sidebar-toggle expanded-toggle" 
+          class="absolute right-5 top-5 z-15 w-[28px] h-[28px] rounded-md flex justify-center items-center cursor-pointer bg-gray-100 hover:bg-blue-50 transition-all duration-300"
           @click.stop="toggleSidebar"
           v-if="isSidebarOpen"
         >
-          <el-icon>
+          <el-icon class="text-[#409eff] text-[16px]">
             <ArrowLeft />
           </el-icon>
         </div>
@@ -75,10 +79,12 @@
 
     <!-- 主内容区 -->
     <div 
-      class="main-content flex-1 flex flex-col transition-all duration-300 ease-in-out"
-      :class="{ 'content-expanded': !isSidebarOpen }"
+      class="flex-1 flex flex-col transition-all duration-300 ease-in-out h-full"
     >
-      <el-main class="main p-6 overflow-auto">
+      <el-main 
+        class="flex-1 bg-[#f5f7fa] overflow-auto transition-all duration-300"
+        :class="{ 'p-6': isSidebarOpen, 'p-10 w-full': !isSidebarOpen }"
+      >
         <!-- 内容根据选择的菜单动态加载 -->
         <component :is="currentComponent" />
       </el-main>
@@ -190,118 +196,20 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.admin-container {
-  display: flex;
-  height: 100vh;
-  overflow: hidden;
-  position: relative;
-}
-
-.sidebar-container {
-  height: 100%;
-  z-index: 10;
-  display: flex;
-  flex-direction: column;
-  overflow: visible; /* 确保溢出内容可见 */
-  position: relative; /* 确保按钮定位相对于侧边栏 */
-}
-
-/* 移除不必要的样式 */
-
-.main-content {
-  height: 100%;
-}
-
-/* 侧边栏收起时内容区扩大并居中 */
-.content-expanded .main {
-  display: flex;
-  justify-content: center;
-  padding: 0;
-}
-
-.content-expanded .main > * {
-  max-width: 1200px;
-  width: 100%;
-}
-
-.main {
-  flex: 1;
-  background-color: #f5f7fa;
-}
-
-/* 侧边栏切换按钮样式 */
-.sidebar-toggle {
-  width: 28px;
-  height: 28px;
-  border-radius: 4px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  cursor: pointer;
-  background-color: #f0f2f5;
-  transition: all 0.3s ease;
-}
-
-.sidebar-toggle:hover {
-  background-color: #e6f3ff;
-}
-
-.sidebar-toggle .el-icon {
-  color: #409eff;
-  font-size: 16px;
-}
-
-/* 折叠状态的切换按钮 - 显示在顶部 */
-.collapsed-toggle {
-  position: absolute;
-  top: 5px;
-  right: 0px;
-  z-index: 1000;
-  background-color: #ffffff;
-  border: 1px solid #dcdfe6;
-  width: 30px;
-  height: 30px;
-}
-
-/* 展开状态的切换按钮 - 显示在侧边栏右上角 */
-.expanded-toggle {
-  position: absolute;
-  right: 5px;
-  top: 5px;
-  z-index: 15;
-}
-
-/* 调整菜单样式以匹配vue-element-admin风格 */
-.el-menu {
-  border-right: none;
-  height: 100%;
-  margin-top: 0; /* 确保菜单紧贴顶部 */
-}
-
-/* 折叠状态下菜单位置调整，确保不被箭头按钮覆盖 */
-:deep(.el-menu--collapse) {
-  padding-top: 35px; /* 为顶部箭头按钮留出空间 */
-}
-
-/* 展开状态下的菜单项样式 */
-.el-menu-item:not(.is-active) {
-  padding-left: 45px !important;
-}
-
-.el-sub-menu__title:not(.is-active) {
-  padding-left: 45px !important;
-}
-
-/* 修复Element Plus折叠菜单的图标位置 */
-.el-menu--collapse .el-menu-item__content {
-  padding: 0;
-}
-
 /* 确保折叠状态下图标居中 */
 .el-menu--collapse .el-menu-item,
 .el-menu--collapse .el-sub-menu__title {
   padding: 0 !important;
   width: 100%;
   justify-content: center;
+  display: flex;
+  align-items: center;
+  height: 40px; /* 统一菜单项高度 */
+  margin: 0;
+}
+
+/* 调整折叠状态下菜单的整体内边距 */
+.el-menu--collapse {
+  padding-top: 10px;
 }
 </style>
